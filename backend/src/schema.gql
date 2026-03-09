@@ -129,10 +129,12 @@ type Mutation {
   createBoard(data: CreateBoardInput!): BoardObject!
   createCard(data: CreateCardInput!): CardObject!
   createList(data: CreateListInput!): ListObject!
+  createRole: RoleObject!
   createUser(data: CreateUserInput!): UserObject!
   deleteBoard(id: ID!): Boolean!
   deleteCard(id: ID!): Boolean!
   deleteList(id: ID!): Boolean!
+  deleteRole: Boolean!
   deleteUser(id: ID!): Boolean!
   duplicateBoard(boardId: ID!, newTitle: String, userId: ID!): BoardObject!
   duplicateCard(cardId: ID!, targetListId: ID): CardObject!
@@ -161,6 +163,8 @@ type Query {
   listStats(listId: ID!): ListStatsObject!
   lists(filter: ListFilterInput): [ListObject!]!
   overdueCards(userId: ID): [CardObject!]!
+  roleByName: RoleObject
+  roles: [RoleObject!]!
   searchCards(boardId: ID, query: String!, userId: ID): [CardObject!]!
   upcomingCards(days: Int = 7, userId: ID): [CardObject!]!
   user(id: ID!): UserObject
@@ -168,6 +172,12 @@ type Query {
   userByEmail(email: String!): UserObject
   userCards(userId: ID!): [CardObject!]!
   users: [UserObject!]!
+}
+
+type RoleObject {
+  id: String!
+  name: String!
+  users: [UserObject!]
 }
 
 input UpdateBoardInput {
@@ -208,4 +218,5 @@ type UserObject {
   name: String
   profileImage: String
   updatedAt: DateTime!
+  userRole: String!
 }

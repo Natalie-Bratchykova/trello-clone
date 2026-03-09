@@ -9,9 +9,9 @@ import { BoardModule } from './board/board.module';
 import { ListModule } from './list/list.module';
 import { CardModule } from './card/card.module';
 import { PrismaModule } from './prisma/prisma.module';
-// import { UploadScalar } from './uploads/images/upload.scalar';
 import { ImageResolver } from './uploads/images/image.resolver';
 import { ImageService } from './uploads/images/image.service';
+import {RoleModule} from "./roles/role.module";
 
 @Module({
   imports: [
@@ -25,6 +25,7 @@ import { ImageService } from './uploads/images/image.service';
     BoardModule,
     ListModule,
     CardModule,
+    RoleModule
   ],
   controllers: [AppController],
   providers: [AppService, ImageResolver, ImageService],
