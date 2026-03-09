@@ -1,0 +1,211 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input BoardFilterInput {
+  search: String
+  userId: String
+}
+
+type BoardObject {
+  color: String!
+  createdAt: DateTime!
+  id: ID!
+  lists: [ListObject!]
+  title: String!
+  updatedAt: DateTime!
+  user: UserObject
+  userId: ID!
+}
+
+type BoardStatsObject {
+  activeCards: Int!
+  boardId: ID!
+  cardsCount: Int!
+  completedCards: Int!
+  listsCount: Int!
+}
+
+input CardFilterInput {
+  boardId: ID
+  listId: ID
+  noDueDate: Boolean
+  overdue: Boolean
+  search: String
+  userId: ID
+}
+
+type CardObject {
+  createdAt: DateTime!
+  description: String
+  dueDate: DateTime
+  id: ID!
+  list: ListObject!
+  listId: ID!
+  position: Int!
+  title: String!
+  updatedAt: DateTime!
+  user: UserObject
+  userId: ID
+}
+
+input CreateBoardInput {
+  color: String
+  title: String!
+  userId: ID!
+}
+
+input CreateCardInput {
+  description: String
+  dueDate: DateTime
+  listId: ID!
+  position: Int
+  title: String!
+  userId: ID
+}
+
+input CreateListInput {
+  boardId: ID!
+  position: Int
+  title: String!
+}
+
+input CreateUserInput {
+  email: String!
+  name: String
+  password: String!
+  profileImage: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input ListFilterInput {
+  boardId: ID
+  search: String
+}
+
+type ListObject {
+  board: BoardObject
+  boardId: ID!
+  cards: [CardObject!]
+  createdAt: DateTime!
+  id: ID!
+  position: Int!
+  title: String!
+  updatedAt: DateTime!
+}
+
+type ListStatsObject {
+  cardsWithDueDate: Int!
+  cardsWithoutDueDate: Int!
+  listId: ID!
+  overdueCards: Int!
+  totalCards: Int!
+}
+
+input LoginUserInput {
+  email: String!
+  password: String!
+}
+
+input MoveCardInput {
+  cardId: ID!
+  position: Int!
+  targetListId: ID!
+}
+
+input MoveListInput {
+  listId: ID!
+  position: Int!
+}
+
+type Mutation {
+  archiveList(listId: ID!): ListObject!
+  assignUser(cardId: ID!, userId: ID): CardObject!
+  clearAllCards(listId: ID!): ListObject!
+  createBoard(data: CreateBoardInput!): BoardObject!
+  createCard(data: CreateCardInput!): CardObject!
+  createList(data: CreateListInput!): ListObject!
+  createUser(data: CreateUserInput!): UserObject!
+  deleteBoard(id: ID!): Boolean!
+  deleteCard(id: ID!): Boolean!
+  deleteList(id: ID!): Boolean!
+  deleteUser(id: ID!): Boolean!
+  duplicateBoard(boardId: ID!, newTitle: String, userId: ID!): BoardObject!
+  duplicateCard(cardId: ID!, targetListId: ID): CardObject!
+  duplicateList(listId: ID!, newTitle: String): ListObject!
+  login(data: LoginUserInput!): UserObject!
+  moveAllCards(sourceListId: ID!, targetListId: ID!): ListObject!
+  moveCard(data: MoveCardInput!): CardObject!
+  moveList(data: MoveListInput!): ListObject!
+  updateBoard(data: UpdateBoardInput!, id: ID!): BoardObject!
+  updateCard(data: UpdateCardInput!, id: ID!): CardObject!
+  updateList(data: UpdateListInput!, id: ID!): ListObject!
+  updateUser(data: UpdateUserInput!, id: ID!): UserObject!
+  uploadImage(file: Upload!): String!
+  uploadProfileImage(file: Upload!, userId: ID!): UserObject!
+}
+
+type Query {
+  board(id: ID!): BoardObject
+  boardLists(boardId: ID!): [ListObject!]!
+  boardStats(boardId: ID!): BoardStatsObject!
+  boards(filter: BoardFilterInput): [BoardObject!]!
+  card(id: ID!): CardObject
+  cards(filter: CardFilterInput): [CardObject!]!
+  list(id: ID!): ListObject
+  listCards(listId: ID!): [CardObject!]!
+  listStats(listId: ID!): ListStatsObject!
+  lists(filter: ListFilterInput): [ListObject!]!
+  overdueCards(userId: ID): [CardObject!]!
+  searchCards(boardId: ID, query: String!, userId: ID): [CardObject!]!
+  upcomingCards(days: Int = 7, userId: ID): [CardObject!]!
+  user(id: ID!): UserObject
+  userBoards(userId: ID!): [BoardObject!]!
+  userByEmail(email: String!): UserObject
+  userCards(userId: ID!): [CardObject!]!
+  users: [UserObject!]!
+}
+
+input UpdateBoardInput {
+  color: String
+  title: String
+}
+
+input UpdateCardInput {
+  description: String
+  dueDate: DateTime
+  listId: ID
+  position: Int
+  title: String
+  userId: ID
+}
+
+input UpdateListInput {
+  position: Int
+  title: String
+}
+
+input UpdateUserInput {
+  email: String
+  name: String
+  password: String
+  profileImage: String
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type UserObject {
+  boards: [BoardObject!]
+  cards: [CardObject!]
+  createdAt: DateTime!
+  email: String!
+  id: ID!
+  name: String
+  profileImage: String
+  updatedAt: DateTime!
+}
