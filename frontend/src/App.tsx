@@ -12,7 +12,7 @@ import ProfilePage from './pages/ProfilePage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string, roleId: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Перевірка сесії при завантаженні додатку
@@ -142,6 +142,7 @@ function App() {
                     userId={user.id}
                     userName={user.name}
                     userEmail={user.email}
+                    userRole={user.roleId}
                   />
                 ) : (
                   <Navigate to="/login" replace />

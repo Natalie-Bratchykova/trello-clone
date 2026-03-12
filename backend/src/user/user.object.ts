@@ -19,6 +19,9 @@ export class UserObject {
   @Field()
   updatedAt: Date;
 
+  @Field(()=> ID, { nullable: true })
+  roleId: number;
+
   @Field({ nullable: true })
   profileImage?: string;
 

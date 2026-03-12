@@ -7,6 +7,7 @@ const GET_USER_PROFILE = gql`
       id
       email
       name
+      roleId
       profileImage
       createdAt
       updatedAt

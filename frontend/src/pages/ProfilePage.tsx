@@ -22,7 +22,7 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemAvatar,
+  ListItemAvatar, Select, FormControl, InputLabel, MenuItem,
 } from '@mui/material';
 import {
   Edit,
@@ -36,35 +36,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserProfileImage } from '../hooks/useUserProfileImage';
 // GraphQL запити
-const GET_USER_PROFILE = gql`
-  query GetUserProfile($userId: ID!) {
-    user(id: $userId) {
-      id
-      email
-      name
-      profileImage
-      createdAt
-      updatedAt
-    }
-    userBoards(userId: $userId) {
-      id
-      title
-      color
-      createdAt
-    }
-  }
-`;
-
-const UPDATE_USER = gql`
-  mutation UpdateUser($id: ID!, $data: UpdateUserInput!) {
-    updateUser(id: $id, data: $data) {
-      id
-      email
-      name
-      profileImage
-    }
-  }
-`;
+import {GET_USER_PROFILE, UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
 
 
 interface ProfilePageProps {
@@ -73,13 +45,14 @@ interface ProfilePageProps {
   userEmail: string;
 }
 
-export default function ProfilePage({userId, userName, userEmail}: ProfilePageProps) {
+export default function ProfilePage({userId, userName, userEmail, userRoleId}: ProfilePageProps) {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userName);
   const [editedEmail, setEditedEmail] = useState(userEmail);
 
+  const [roleId, SetRoleId] = useState(userRoleId);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -97,6 +70,7 @@ export default function ProfilePage({userId, userName, userEmail}: ProfilePagePr
     variables: {userId},
   }) as any;
 
+  const {data:roles} = useQuery(GET_ALL_ROLES) as any;
   const [updateUser, {loading: updateLoading}] = useMutation(UPDATE_USER) as any;
 
   const handleEditToggle = () => {
@@ -115,6 +89,7 @@ export default function ProfilePage({userId, userName, userEmail}: ProfilePagePr
           data: {
             name: editedName,
             email: editedEmail,
+            roleId: parseFloat((roleId).toString()),
           },
         },
       });
@@ -350,6 +325,16 @@ export default function ProfilePage({userId, userName, userEmail}: ProfilePagePr
                       disabled={!isEditing}
                       type="email"
                   />
+                </Grid>
+                <Grid item  xs={12}>
+                  <FormControl sx={{ minWidth: 120 }}>
+                    <InputLabel>Role</InputLabel>
+                    <Select label={"Роль"} value={user.roleId|| roleId} onChange={(e) => SetRoleId(e.target.value)} disabled={!isEditing} variant={userRoleId}>
+                      {roles?.roles?.map(role => {
+                        return (<MenuItem key={role.id} value={role.id} selected={Number(role.id) === Number(userRoleId)}>{role.name}</MenuItem>)
+                      })}
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
