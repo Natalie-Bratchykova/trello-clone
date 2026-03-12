@@ -15,43 +15,7 @@ import {
 } from '@mui/material';
 import { ArrowBack, Add, MoreVert } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
-
-const GET_BOARD = gql`
-  query GetBoard($id: ID!) {
-    board(id: $id) {
-      id
-      title
-      color
-      createdAt
-      lists {
-        id
-        title
-        position
-        cards {
-          id
-          title
-          description
-          position
-          dueDate
-          user {
-            id
-            name
-          }
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_LIST_MUTATION = gql`
-  mutation CreateList($title: String!, $boardId: ID!) {
-    createList(data: { title: $title, boardId: $boardId }) {
-      id
-      title
-      position
-    }
-  }
-`;
+import { GET_BOARD, CREATE_LIST_MUTATION } from '../helpers/gql/boardGQL';
 
 interface Card {
   id: string;

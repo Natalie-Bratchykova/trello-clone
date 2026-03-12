@@ -15,16 +15,8 @@ import {
   IconButton,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
+import  { LOGIN_MUTATION } from '../helpers/gql/userGQL';
 
-const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!) {
-    login(data: { email: $email, password: $password }) {
-      id
-      email
-      name
-    }
-  }
-`;
 
 interface LoginData {
   login: {
@@ -49,14 +41,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleLoginSuccess = (data: LoginData) => {
     if (data.login) {
-      // Зберігаємо інформацію в localStorage
       localStorage.setItem('user', JSON.stringify(data.login));
       localStorage.setItem('isAuthenticated', 'true');
-
-      // Викликаємо callback для оновлення стану
       onLogin(data.login);
-
-      // Перенаправляємо на сторінку проектів
       navigate('/projects');
     }
   };
