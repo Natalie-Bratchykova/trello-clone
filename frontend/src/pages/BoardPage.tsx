@@ -147,7 +147,7 @@ export default function BoardPage() {
         <Container maxWidth={false}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton
-              onClick={() => navigate('/projects')}
+              onClick={() => history.back()}
               sx={{ color: 'white' }}
             >
               <ArrowBack />

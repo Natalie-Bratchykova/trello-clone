@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -36,7 +35,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserProfileImage } from '../hooks/useUserProfileImage';
 // GraphQL запити
-import {GET_USER_PROFILE, UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
+import {UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
+import {useUserData} from "../hooks/useUserData.ts";
 
 
 interface ProfilePageProps {
@@ -66,9 +66,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
   }>({open: false, message: '', severity: 'success'});
 
 
-  const {data, loading, error, refetch} = useQuery(GET_USER_PROFILE, {
-    variables: {userId},
-  }) as any;
+  const {data, loading, error, refetch} = useUserData(userId);
 
   const {data:roles} = useQuery(GET_ALL_ROLES) as any;
   const [updateUser, {loading: updateLoading}] = useMutation(UPDATE_USER) as any;
@@ -413,6 +411,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                               mb: 1,
                               '&:hover': {
                                 bgcolor: 'action.hover',
+                                cursor:'pointer',
                               },
                             }}
                         >
