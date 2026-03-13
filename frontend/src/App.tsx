@@ -9,13 +9,15 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import BoardPage from './pages/BoardPage';
 import ProfilePage from './pages/ProfilePage';
+import {DndProvider} from "react-dnd";
+import {HTML5Backend} from "react-dnd-html5-backend";
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ id: string; name: string; email: string, roleId: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Перевірка сесії при завантаженні додатку
   useEffect(() => {
     const checkSession = () => {
       try {
@@ -29,7 +31,6 @@ function App() {
         }
       } catch (error) {
         console.error('Error loading session:', error);
-        // Якщо помилка - очищаємо localStorage
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('user');
       } finally {
@@ -43,7 +44,6 @@ function App() {
   const handleLogin = (userData: { id: string; name: string; email: string }) => {
     setIsAuthenticated(true);
     setUser(userData);
-    // Зберігаємо в localStorage (вже зберігається в LoginPage/RegisterPage, але для консистентності)
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('isAuthenticated', 'true');
   };
@@ -51,12 +51,10 @@ function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    // Очищаємо localStorage
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
   };
 
-  // Показуємо завантаження поки перевіряємо сесію
   if (isLoading) {
     return (
       <ThemeProvider theme={theme}>
@@ -70,123 +68,116 @@ function App() {
             backgroundColor: 'background.default',
           }}
         >
-          {/* Можна додати Spinner тут */}
         </Box>
       </ThemeProvider>
     );
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-          <Navbar
-            isAuthenticated={isAuthenticated}
-            user={user || undefined}
-            onLogout={handleLogout}
-            onLogin={() => {}} // Тепер не використовується, логін через форму
-          />
+    <DndProvider backend={HTML5Backend}>
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <Router>
+                <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+                    <Navbar
+                        isAuthenticated={isAuthenticated}
+                        user={user || undefined}
+                        onLogout={handleLogout}
+                        onLogin={() => {}}
+                    />
 
-          <Routes>
-            {/* Головна сторінка - редирект */}
-            <Route
-              path="/"
-              element={
-                <Navigate to={isAuthenticated ? "/projects" : "/login"} replace />
-              }
-            />
+                    <Routes>
+                        <Route
+                            path="/"
+                            element={
+                                <Navigate to={isAuthenticated ? "/projects" : "/login"} replace />
+                            }
+                        />
 
-            {/* Сторінка логіну */}
-            <Route
-              path="/login"
-              element={
-                isAuthenticated ? (
-                  <Navigate to="/projects" replace />
-                ) : (
-                  <LoginPage onLogin={handleLogin} />
-                )
-              }
-            />
+                        <Route
+                            path="/login"
+                            element={
+                                isAuthenticated ? (
+                                    <Navigate to="/projects" replace />
+                                ) : (
+                                    <LoginPage onLogin={handleLogin} />
+                                )
+                            }
+                        />
 
-            {/* Сторінка реєстрації */}
-            <Route
-              path="/register"
-              element={
-                isAuthenticated ? (
-                  <Navigate to="/projects" replace />
-                ) : (
-                  <RegisterPage onLogin={handleLogin} />
-                )
-              }
-            />
+                        <Route
+                            path="/register"
+                            element={
+                                isAuthenticated ? (
+                                    <Navigate to="/projects" replace />
+                                ) : (
+                                    <RegisterPage onLogin={handleLogin} />
+                                )
+                            }
+                        />
 
-            {/* Сторінка проектів */}
-            <Route
-              path="/projects"
-              element={
-                <ProjectsPage
-                  isAuthenticated={isAuthenticated}
-                  userId={user?.id}
-                  onLogin={() => {}} // Не використовується, редирект на /login
-                />
-              }
-            />
+                        <Route
+                            path="/projects"
+                            element={
+                                <ProjectsPage
+                                    isAuthenticated={isAuthenticated}
+                                    userId={user?.id}
+                                    onLogin={() => {}}
+                                />
+                            }
+                        />
 
-            {/* Профіль */}
-            <Route
-              path="/profile"
-              element={
-                isAuthenticated && user ? (
-                  <ProfilePage
-                    userId={user.id}
-                    userName={user.name}
-                    userEmail={user.email}
-                    userRole={user.roleId}
-                  />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+                        <Route
+                            path="/profile"
+                            element={
+                                isAuthenticated && user ? (
+                                    <ProfilePage
+                                        userId={user.id}
+                                        userName={user.name}
+                                        userEmail={user.email}
+                                        userRole={user.roleId}
+                                    />
+                                ) : (
+                                    <Navigate to="/login" replace />
+                                )
+                            }
+                        />
 
-            {/* Дошка проекту */}
-            <Route
-              path="/board/:id"
-              element={
-                isAuthenticated ? (
-                  <BoardPage />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+                        <Route
+                            path="/board/:id"
+                            element={
+                                isAuthenticated ? (
+                                    <BoardPage />
+                                ) : (
+                                    <Navigate to="/login" replace />
+                                )
+                            }
+                        />
 
-            {/* Редагування проекту */}
-            <Route
-              path="/board/:id/edit"
-              element={
-                isAuthenticated ? (
-                  <Box sx={{ p: 3 }}>
-                    <h1>Редагування проекту (в розробці)</h1>
-                  </Box>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+                        <Route
+                            path="/board/:id/edit"
+                            element={
+                                isAuthenticated ? (
+                                    <Box sx={{ p: 3 }}>
+                                        <h1>Редагування проекту (в розробці)</h1>
+                                    </Box>
+                                ) : (
+                                    <Navigate to="/login" replace />
+                                )
+                            }
+                        />
 
-            {/* 404 */}
-            <Route
-              path="*"
-              element={
-                <Navigate to={isAuthenticated ? "/projects" : "/login"} replace />
-              }
-            />
-          </Routes>
-        </Box>
-      </Router>
-    </ThemeProvider>
+                        <Route
+                            path="*"
+                            element={
+                                <Navigate to={isAuthenticated ? "/projects" : "/login"} replace />
+                            }
+                        />
+                    </Routes>
+                </Box>
+            </Router>
+        </ThemeProvider>
+    </DndProvider>
   );
 }
 

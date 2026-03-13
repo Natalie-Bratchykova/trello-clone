@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -13,9 +12,10 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ArrowBack, Add, MoreVert } from '@mui/icons-material';
+import { ArrowBack, Add } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
 import { GET_BOARD, CREATE_LIST_MUTATION } from '../helpers/gql/boardGQL';
+import BoardColumn from "../components/BoardColumn.tsx";
 
 interface Card {
   id: string;
@@ -72,6 +72,40 @@ export default function BoardPage() {
       refetch();
     },
   });
+
+  const handleTicketsDnD = useCallback((item, targetList) => {
+    const { listId } = item;
+
+    setBoard((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        lists: prev.lists.map((l) => {
+          if (l.id === listId) {
+            // TODO: add here state management for cards
+            return {
+              ...l,
+              cards: l.cards.filter((c) => c.id !== item.id),
+            };
+          }
+
+          if (l.id === targetList.id) {
+            let newItem = {
+              ...item,
+              listId: targetList.id,
+            }
+            return {
+              ...l,
+              cards: [...l.cards, newItem]
+            };
+          }
+
+          return l;
+        }),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (data?.board) {
@@ -134,7 +168,6 @@ export default function BoardPage() {
         pb: 4,
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           backgroundColor: board.color,
@@ -159,7 +192,6 @@ export default function BoardPage() {
         </Container>
       </Box>
 
-      {/* Lists Container */}
       <Container maxWidth={false}>
         <Box
           sx={{
@@ -170,160 +202,12 @@ export default function BoardPage() {
             minHeight: '70vh',
           }}
         >
-          {/* Existing Lists */}
           {[...board.lists]
             .sort((a, b) => a.position - b.position)
             .map((list) => (
-              <Paper
-                key={list.id}
-                sx={{
-                  minWidth: 300,
-                  maxWidth: 300,
-                  backgroundColor: 'background.paper',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxHeight: 'calc(100vh - 250px)',
-                }}
-              >
-                {/* List Header */}
-                <Box
-                  sx={{
-                    p: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {list.title}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        backgroundColor: 'action.hover',
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                      }}
-                    >
-                      {list.cards.length}
-                    </Typography>
-                    <IconButton size="small">
-                      <MoreVert fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </Box>
-
-                {/* Cards */}
-                <Box
-                  sx={{
-                    p: 1,
-                    flexGrow: 1,
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                  }}
-                >
-                  {[...list.cards]
-                    .sort((a, b) => a.position - b.position)
-                    .map((card) => (
-                      <Paper
-                        key={card.id}
-                        sx={{
-                          p: 1.5,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
-                        elevation={1}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {card.title}
-                        </Typography>
-                        {card.description && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                              mt: 0.5,
-                            }}
-                          >
-                            {card.description}
-                          </Typography>
-                        )}
-                        {(card.dueDate || card.user) && (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              gap: 1,
-                              mt: 1,
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            {card.dueDate && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  backgroundColor: 'warning.light',
-                                  color: 'warning.dark',
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: 0.5,
-                                }}
-                              >
-                                {new Date(card.dueDate).toLocaleDateString('uk-UA')}
-                              </Typography>
-                            )}
-                            {card.user && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  backgroundColor: 'primary.light',
-                                  color: 'primary.dark',
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: 0.5,
-                                }}
-                              >
-                                {card.user.name}
-                              </Typography>
-                            )}
-                          </Box>
-                        )}
-                      </Paper>
-                    ))}
-                </Box>
-
-                {/* Add Card Button */}
-                <Box sx={{ p: 1 }}>
-                  <Button
-                    fullWidth
-                    startIcon={<Add />}
-                    sx={{ justifyContent: 'flex-start' }}
-                    onClick={() =>
-                      setCardDialogState({
-                        open: true,
-                        listId: list.id,
-                        listTitle: list.title,
-                      })
-                    }
-                  >
-                    Додати картку
-                  </Button>
-                </Box>
-              </Paper>
+             <BoardColumn onDrop={(item)=>handleTicketsDnD(item, list)} list={list} key={list.id} setCardDialogState={setCardDialogState}/>
             ))}
 
-          {/* Add List */}
           <Paper
             sx={{
               minWidth: 300,
@@ -383,7 +267,6 @@ export default function BoardPage() {
         </Box>
       </Container>
 
-      {/* Create Card Dialog */}
       <CreateCardDialog
         open={cardDialogState.open}
         onClose={() => setCardDialogState({ open: false, listId: '', listTitle: '' })}
