@@ -36,6 +36,15 @@ export const CREATE_LIST_MUTATION = gql`
     }
   }
 `;
+export const MOVE_TICKET = gql`
+  mutation moveCard($data: MoveCardInput!) {
+    moveCard(data: $data) {
+      id
+      listId
+      position
+    }
+  }
+`;
 
 export const GET_USER_BOARDS = gql`
   query GetUserBoards($userId: ID!) {

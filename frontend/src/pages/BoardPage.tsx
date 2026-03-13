@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useCallback} from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
@@ -14,8 +14,9 @@ import {
 } from '@mui/material';
 import { ArrowBack, Add } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
-import { GET_BOARD, CREATE_LIST_MUTATION } from '../helpers/gql/boardGQL';
+import {GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET} from '../helpers/gql/boardGQL';
 import BoardColumn from "../components/BoardColumn.tsx";
+import {gql} from "@apollo/client";
 
 interface Card {
   id: string;
@@ -47,7 +48,6 @@ interface Board {
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [board, setBoard] = useState<Board | null>(null);
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [cardDialogState, setCardDialogState] = useState<{
@@ -65,6 +65,8 @@ export default function BoardPage() {
     skip: !id,
   });
 
+  const board = data?.board ?? null;
+
   const [createList, { loading: createListLoading }] = useMutation(CREATE_LIST_MUTATION, {
     onCompleted: () => {
       setNewListTitle('');
@@ -73,45 +75,86 @@ export default function BoardPage() {
     },
   });
 
-  const handleTicketsDnD = useCallback((item, targetList) => {
-    const { listId } = item;
+  const [moveTicket] = useMutation(MOVE_TICKET, {
+    onError: (err) => console.error(err),
+    update(cache, { data }) {
+      const movedCard = data?.moveCard;
+      if (!movedCard || !board?.lists) return;
 
-    setBoard((prev) => {
-      if (!prev) return prev;
+      const sourceList = board.lists.find((list) => list.cards.some((c) => c.id === movedCard.id));
+      if (!sourceList) return;
 
-      return {
-        ...prev,
-        lists: prev.lists.map((l) => {
-          if (l.id === listId) {
-            // TODO: add here state management for cards
-            return {
-              ...l,
-              cards: l.cards.filter((c) => c.id !== item.id),
-            };
-          }
+      const targetListId = movedCard.listId;
 
-          if (l.id === targetList.id) {
-            let newItem = {
-              ...item,
-              listId: targetList.id,
-            }
-            return {
-              ...l,
-              cards: [...l.cards, newItem]
-            };
-          }
+      cache.modify({
+        id: cache.identify({ __typename: 'ListObject', id: sourceList.id }),
+        fields: {
+          cards(existingCardRefs: any[] = [], { readField }) {
+            return existingCardRefs.filter((ref) => readField('id', ref) !== movedCard.id);
+          },
+        },
+      });
 
-          return l;
-        }),
-      };
+      cache.modify({
+        id: cache.identify({ __typename: 'ListObject', id: targetListId }),
+        fields: {
+          cards(existingCardRefs: any[] = [], { readField, toReference }) {
+            const alreadyInList = existingCardRefs.some((ref) => readField('id', ref) === movedCard.id);
+            const cardRef =
+              toReference({ __typename: 'CardObject', id: movedCard.id }) ??
+              cache.writeFragment({
+                data: { __typename: 'CardObject', id: movedCard.id },
+                fragment: gql`
+                  fragment MinimalCard on CardObject {
+                    id
+                  }
+                `,
+              });
+
+            if (alreadyInList) return existingCardRefs;
+
+            const insertAt = Math.max(0, Math.min(movedCard.position ?? existingCardRefs.length, existingCardRefs.length));
+            return [
+              ...existingCardRefs.slice(0, insertAt),
+              cardRef,
+              ...existingCardRefs.slice(insertAt),
+            ];
+          },
+        },
+      });
+
+      cache.modify({
+        id: cache.identify({ __typename: 'CardObject', id: movedCard.id }),
+        fields: {
+          listId() {
+            return movedCard.listId;
+          },
+          position() {
+            return movedCard.position;
+          },
+        },
+      });
+    },
+  });
+
+  const handleTicketsDnD = useCallback((item: Card & { listId: string }, targetList: List) => {
+    const sourceListId = item.listId;
+    if (sourceListId === targetList.id) return;
+
+    const position = targetList.cards.length;
+
+    moveTicket({
+      variables: { data: { cardId: item.id, targetListId: targetList.id, position } },
+      optimisticResponse: {
+        moveCard: {
+          __typename: 'CardObject',
+          id: item.id,
+          listId: targetList.id,
+          position,
+        },
+      },
     });
-  }, []);
-
-  useEffect(() => {
-    if (data?.board) {
-      setBoard(data.board);
-    }
-  }, [data]);
+  }, [moveTicket]);
 
   const handleCreateList = async () => {
     if (!newListTitle.trim() || !id) return;
@@ -277,4 +320,3 @@ export default function BoardPage() {
     </Box>
   );
 }
-

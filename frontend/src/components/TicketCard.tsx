@@ -16,7 +16,6 @@ export interface TicketCardProps {
     }
 }
 export default function TicketCard({card}:TicketCardProps) {
-    console.log(card)
     const [{opacity}, dragRef] = useDrag(
         () => ({
             type: ItemTypes.TICKET,
