@@ -15,6 +15,7 @@ export const GET_BOARD = gql`
           id
           title
           description
+          listId
           position
           dueDate
           user {
@@ -33,5 +34,32 @@ export const CREATE_LIST_MUTATION = gql`
       title
       position
     }
+  }
+`;
+export const MOVE_TICKET = gql`
+  mutation moveCard($data: MoveCardInput!) {
+    moveCard(data: $data) {
+      id
+      listId
+      position
+    }
+  }
+`;
+
+export const GET_USER_BOARDS = gql`
+  query GetUserBoards($userId: ID!) {
+    userBoards(userId: $userId) {
+      id
+      title
+      color
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_BOARD_MUTATION = gql`
+  mutation DeleteBoard($id: ID!) {
+    deleteBoard(id: $id)
   }
 `;

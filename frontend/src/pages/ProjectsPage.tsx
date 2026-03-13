@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { gql } from '@apollo/client';
+import {useState, useEffect} from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -17,23 +16,9 @@ import EmptyState from '../components/EmptyState';
 import CreateBoardDialog from '../components/CreateBoardDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 
-const GET_USER_BOARDS = gql`
-  query GetUserBoards($userId: ID!) {
-    userBoards(userId: $userId) {
-      id
-      title
-      color
-      createdAt
-      updatedAt
-    }
-  }
-`;
+import {GET_USER_BOARDS, DELETE_BOARD_MUTATION} from "../helpers/gql/boardGQL.ts";
 
-const DELETE_BOARD_MUTATION = gql`
-  mutation DeleteBoard($id: ID!) {
-    deleteBoard(id: $id)
-  }
-`;
+
 
 interface Board {
   id: string;
@@ -96,6 +81,8 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     },
   });
 
+
+
   useEffect(() => {
     if (data?.userBoards) {
       setBoards(data.userBoards);
@@ -120,7 +107,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
       await deleteBoard({
         variables: { id: deleteDialogState.boardId },
       });
-      // Видаляємо з локального стану
       setBoards(boards.filter(board => board.id !== deleteDialogState.boardId));
     } catch (err) {
       console.error('Delete error:', err);
@@ -132,7 +118,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
   };
 
   const handleBoardCreated = (newBoard: Board) => {
-    // Додаємо новий проект до списку
     setBoards([newBoard, ...boards]);
     setSnackbar({
       open: true,
@@ -141,17 +126,14 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     });
   };
 
-  // Якщо користувач не авторизований - показуємо заглушку
   if (!isAuthenticated) {
     return <EmptyState />;
   }
 
-  // Показуємо skeleton під час завантаження
   if (loading) {
     return <ProjectsSkeleton />;
   }
 
-  // Показуємо помилку якщо є
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -164,7 +146,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Заголовок */}
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
@@ -185,8 +166,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
           Створити проект
         </Button>
       </Box>
-
-      {/* Список проектів */}
       {boards.length === 0 ? (
         <Box
           sx={{
@@ -226,12 +205,11 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
           }}
         >
           {boards.map((board) => (
-            <BoardCard key={board.id} board={board} onDelete={handleDeleteBoard} />
+            <BoardCard key={board.id} board={board} onDelete={handleDeleteBoard}  />
           ))}
         </Box>
       )}
 
-      {/* Floating Action Button для швидкого створення */}
       {boards.length > 0 && (
         <Fab
           color="primary"
@@ -247,7 +225,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
         </Fab>
       )}
 
-      {/* Діалог створення проекту */}
       {userId && (
         <CreateBoardDialog
           open={isCreateDialogOpen}
@@ -257,7 +234,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
         />
       )}
 
-      {/* Діалог підтвердження видалення */}
       <ConfirmDeleteDialog
         open={deleteDialogState.open}
         onClose={() => setDeleteDialogState({ open: false, boardId: null, boardTitle: '' })}
@@ -266,7 +242,6 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
         loading={deleteLoading}
       />
 
-      {/* Snackbar для повідомлень */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}

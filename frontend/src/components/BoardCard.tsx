@@ -9,6 +9,8 @@ import {
 } from '@mui/material';
 import { Edit, Delete, Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import {useDrag} from "react-dnd";
+import {ItemTypes} from "../helpers/types/ItemTypes.ts";
 
 interface BoardCardProps {
   board: {
@@ -20,17 +22,30 @@ interface BoardCardProps {
     cardsCount?: number;
   };
   onDelete?: (id: string) => void;
+  isDropped?: boolean;
 }
 
-export default function BoardCard({ board, onDelete }: BoardCardProps) {
+export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps) {
   const navigate = useNavigate();
 
   const handleOpen = () => {
     navigate(`/board/${board.id}`);
   };
 
+  const [{opacity}, dragRef] = useDrag(
+    () => ({
+      type: ItemTypes.BOARD_CARD,
+      item: { id: board.id, type: ItemTypes.BOARD_CARD },
+      collect: (monitor) => ({
+        opacity: monitor.isDragging() ? 0.5 : 1,
+      }),
+
+    })
+  );
+
+
   return (
-    <Card
+    <Card ref={dragRef}
       sx={{
         height: '100%',
         display: 'flex',
@@ -41,9 +56,10 @@ export default function BoardCard({ board, onDelete }: BoardCardProps) {
           boxShadow: 4,
         },
         borderTop: `4px solid ${board.color}`,
+        opacity
       }}
     >
-      <CardContent sx={{ flexGrow: 1 }}>
+      <CardContent sx={{ flexGrow: 1 }} >
         <Typography variant="h6" component="div" gutterBottom>
           {board.title}
         </Typography>
