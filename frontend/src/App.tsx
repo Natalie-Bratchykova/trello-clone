@@ -12,7 +12,7 @@ import TaskPage from './pages/TaskPage';
 import ProfilePage from './pages/ProfilePage';
 import {DndProvider} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
-
+import ProjectEditPage from "./pages/ProjectEditPage.tsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -170,9 +170,7 @@ function App() {
                             path="/board/:id/edit"
                             element={
                                 isAuthenticated ? (
-                                    <Box sx={{ p: 3 }}>
-                                        <h1>Редагування проекту (в розробці)</h1>
-                                    </Box>
+                                    <ProjectEditPage />
                                 ) : (
                                     <Navigate to="/login" replace />
                                 )

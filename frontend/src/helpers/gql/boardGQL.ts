@@ -22,11 +22,28 @@ export const GET_BOARD = gql`
           priority
           createdAt
           updatedAt
+          parentId
           user {
             id
             name
             email
             profileImage
+          }
+          parent {
+            id
+            title
+            suffix
+          }
+          children {
+            id
+            title
+            suffix
+            priority
+            dueDate
+            user {
+              id
+              name
+            }
           }
         }
       }

@@ -12,7 +12,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ArrowBack, Add } from '@mui/icons-material';
+import { ArrowBack, Add, Settings } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
 import TicketDetailDialog from '../components/TicketDetailDialog';
 import {GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET} from '../helpers/gql/boardGQL';
@@ -30,12 +30,29 @@ interface Card {
   listId?: string;
   createdAt?: string;
   updatedAt?: string;
+  parentId?: string;
   user?: {
     id: string;
     name: string;
     email?: string;
     profileImage?: string;
   };
+  parent?: {
+    id: string;
+    title: string;
+    suffix?: string;
+  };
+  children?: {
+    id: string;
+    title: string;
+    suffix?: string;
+    priority?: string;
+    dueDate?: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+  }[];
 }
 
 interface List {
@@ -238,9 +255,16 @@ export default function BoardPage() {
             >
               <ArrowBack />
             </IconButton>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, flex: 1 }}>
               {board.title}
             </Typography>
+            <IconButton
+              onClick={() => navigate(`/board/${id}/edit`)}
+              sx={{ color: 'white' }}
+              title="Налаштування проекту"
+            >
+              <Settings />
+            </IconButton>
           </Box>
         </Container>
       </Box>
@@ -331,6 +355,7 @@ export default function BoardPage() {
         onClose={() => setCardDialogState({ open: false, listId: '', listTitle: '' })}
         listId={cardDialogState.listId}
         listTitle={cardDialogState.listTitle}
+        boardId={id}
         onCardCreated={() => refetch()}
       />
 
@@ -339,6 +364,7 @@ export default function BoardPage() {
         onClose={() => setSelectedCard(null)}
         card={selectedCard?.card ?? null}
         listTitle={selectedCard?.listTitle}
+        boardId={id}
         onCardUpdated={() => {
           setSelectedCard(null);
           refetch();

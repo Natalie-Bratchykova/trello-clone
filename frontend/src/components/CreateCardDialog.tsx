@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,7 @@ import {
   Select,
   MenuItem,
   Avatar,
+  Chip,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { gql } from '@apollo/client';
@@ -33,8 +34,8 @@ const GET_USERS_QUERY = gql`
 `;
 
 const CREATE_CARD_MUTATION = gql`
-  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID) {
-    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId }) {
+  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID, $parentId: ID) {
+    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId, parentId: $parentId }) {
       id
       title
       description
@@ -42,11 +43,34 @@ const CREATE_CARD_MUTATION = gql`
       dueDate
       priority
       suffix
+      parentId
       userId
       user {
         id
         name
         email
+      }
+      parent {
+        id
+        title
+        suffix
+      }
+    }
+  }
+`;
+
+const GET_BOARD_CARDS_FOR_CREATE = gql`
+  query GetBoardCardsForCreate($boardId: ID!) {
+    board(id: $boardId) {
+      id
+      lists {
+        id
+        title
+        cards {
+          id
+          title
+          suffix
+        }
       }
     }
   }
@@ -56,6 +80,13 @@ interface User {
   id: string;
   name: string;
   email: string;
+}
+
+interface ParentCardOption {
+  id: string;
+  title: string;
+  suffix?: string;
+  listTitle?: string;
 }
 
 interface GetUsersData {
@@ -108,6 +139,7 @@ interface CreateCardDialogProps {
   onClose: () => void;
   listId: string;
   listTitle: string;
+  boardId?: string;
   onCardCreated: () => void;
 }
 
@@ -116,6 +148,7 @@ export default function CreateCardDialog({
   onClose,
   listId,
   listTitle,
+  boardId,
   onCardCreated,
 }: CreateCardDialogProps) {
   const [title, setTitle] = useState('');
@@ -123,15 +156,37 @@ export default function CreateCardDialog({
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('LOW');
   const [assignee, setAssignee] = useState<User | null>(null);
+  const [parentTask, setParentTask] = useState<ParentCardOption | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
 
   const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_QUERY, {
     skip: !open,
   });
 
+  const { data: boardData } = useQuery(GET_BOARD_CARDS_FOR_CREATE, {
+    variables: { boardId },
+    skip: !open || !boardId,
+  });
+
   const [createCard, { loading }] = useMutation<CreateCardData>(CREATE_CARD_MUTATION);
 
   const users: User[] = usersData?.users ?? [];
+
+  const parentCardOptions: ParentCardOption[] = useMemo(() => {
+    if (!boardData?.board?.lists) return [];
+    const options: ParentCardOption[] = [];
+    for (const list of boardData.board.lists) {
+      for (const c of list.cards) {
+        options.push({
+          id: c.id,
+          title: c.title,
+          suffix: c.suffix,
+          listTitle: list.title,
+        });
+      }
+    }
+    return options;
+  }, [boardData]);
 
   const handleClose = () => {
     setTitle('');
@@ -139,6 +194,7 @@ export default function CreateCardDialog({
     setDueDate('');
     setPriority('LOW');
     setAssignee(null);
+    setParentTask(null);
     setErrors({});
     onClose();
   };
@@ -176,6 +232,7 @@ export default function CreateCardDialog({
           dueDate: dueDate || undefined,
           priority,
           userId: assignee?.id || undefined,
+          parentId: parentTask?.id || undefined,
         },
       });
 
@@ -317,6 +374,47 @@ export default function CreateCardDialog({
               />
             )}
           />
+
+          {/* Parent task selector */}
+          {boardId && (
+            <Autocomplete<ParentCardOption>
+              options={parentCardOptions}
+              value={parentTask}
+              onChange={(_, newValue) => setParentTask(newValue)}
+              getOptionLabel={(option) =>
+                option.suffix ? `${option.suffix} — ${option.title}` : option.title
+              }
+              disabled={loading}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              groupBy={(option) => option.listTitle || ''}
+              filterOptions={(options, { inputValue }) => {
+                const filter = inputValue.toLowerCase();
+                return options.filter(
+                  (o) =>
+                    o.title.toLowerCase().includes(filter) ||
+                    (o.suffix || '').toLowerCase().includes(filter),
+                );
+              }}
+              renderOption={({ key, ...props }, option) => (
+                <li key={option.id} {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                    {option.suffix && (
+                      <Chip label={option.suffix} size="small" color="primary" variant="outlined" sx={{ flexShrink: 0 }} />
+                    )}
+                    <Typography variant="body2" noWrap>{option.title}</Typography>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Батьківська задача (опціонально)"
+                  placeholder="Пошук задачі..."
+                  margin="normal"
+                />
+              )}
+            />
+          )}
 
           <TextField
             fullWidth

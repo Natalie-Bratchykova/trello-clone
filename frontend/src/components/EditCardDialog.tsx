@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,7 @@ import {
   Select,
   MenuItem,
   Avatar,
+  Chip,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { gql } from '@apollo/client';
@@ -32,6 +33,23 @@ const GET_USERS_QUERY = gql`
   }
 `;
 
+const GET_BOARD_CARDS_QUERY = gql`
+  query GetBoardCardsForParent($boardId: ID!) {
+    board(id: $boardId) {
+      id
+      lists {
+        id
+        title
+        cards {
+          id
+          title
+          suffix
+        }
+      }
+    }
+  }
+`;
+
 const UPDATE_CARD_MUTATION = gql`
   mutation UpdateCard($id: ID!, $data: UpdateCardInput!) {
     updateCard(id: $id, data: $data) {
@@ -44,6 +62,7 @@ const UPDATE_CARD_MUTATION = gql`
       suffix
       listId
       userId
+      parentId
       createdAt
       updatedAt
       user {
@@ -51,6 +70,16 @@ const UPDATE_CARD_MUTATION = gql`
         name
         email
         profileImage
+      }
+      parent {
+        id
+        title
+        suffix
+      }
+      children {
+        id
+        title
+        suffix
       }
       list {
         id
@@ -72,6 +101,13 @@ interface User {
   profileImage?: string;
 }
 
+interface ParentCardOption {
+  id: string;
+  title: string;
+  suffix?: string;
+  listTitle?: string;
+}
+
 interface GetUsersData {
   users: User[];
 }
@@ -87,6 +123,7 @@ interface UpdateCardData {
     suffix: string;
     listId: string;
     userId: string;
+    parentId: string;
     createdAt: string;
     updatedAt: string;
     user: User;
@@ -100,6 +137,7 @@ export interface EditCardData {
   priority?: string;
   dueDate?: string;
   userId?: string;
+  parentId?: string;
   user?: {
     id: string;
     name: string;
@@ -139,6 +177,7 @@ interface EditCardDialogProps {
   open: boolean;
   onClose: () => void;
   card: EditCardData | null;
+  boardId?: string;
   onCardUpdated?: () => void;
 }
 
@@ -146,6 +185,7 @@ export default function EditCardDialog({
   open,
   onClose,
   card,
+  boardId,
   onCardUpdated,
 }: EditCardDialogProps) {
   const [title, setTitle] = useState('');
@@ -153,15 +193,39 @@ export default function EditCardDialog({
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('LOW');
   const [assignee, setAssignee] = useState<User | null>(null);
+  const [parentTask, setParentTask] = useState<ParentCardOption | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
 
   const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_QUERY, {
     skip: !open,
   });
 
+  const { data: boardData } = useQuery(GET_BOARD_CARDS_QUERY, {
+    variables: { boardId },
+    skip: !open || !boardId,
+  });
+
   const [updateCard, { loading }] = useMutation<UpdateCardData>(UPDATE_CARD_MUTATION);
 
   const users: User[] = usersData?.users ?? [];
+
+  // Flatten all board cards into options for the parent selector (exclude current card)
+  const parentCardOptions: ParentCardOption[] = useMemo(() => {
+    if (!boardData?.board?.lists) return [];
+    const options: ParentCardOption[] = [];
+    for (const list of boardData.board.lists) {
+      for (const c of list.cards) {
+        if (card && c.id === card.id) continue; // exclude self
+        options.push({
+          id: c.id,
+          title: c.title,
+          suffix: c.suffix,
+          listTitle: list.title,
+        });
+      }
+    }
+    return options;
+  }, [boardData, card]);
 
   // Populate form when card changes
   useEffect(() => {
@@ -170,7 +234,6 @@ export default function EditCardDialog({
       setDescription(card.description || '');
       setPriority(card.priority || 'LOW');
 
-      // Format dueDate for input[type="date"]
       if (card.dueDate) {
         const d = new Date(card.dueDate);
         const formatted = d.toISOString().split('T')[0];
@@ -179,7 +242,6 @@ export default function EditCardDialog({
         setDueDate('');
       }
 
-      // Set assignee from card user
       if (card.user) {
         setAssignee({ id: card.user.id, name: card.user.name, email: card.user.email || '' });
       } else {
@@ -189,6 +251,16 @@ export default function EditCardDialog({
       setErrors({});
     }
   }, [card, open]);
+
+  // Set parent task once board cards are loaded
+  useEffect(() => {
+    if (card?.parentId && parentCardOptions.length > 0) {
+      const found = parentCardOptions.find((o) => o.id === card.parentId);
+      setParentTask(found || null);
+    } else if (card && !card.parentId) {
+      setParentTask(null);
+    }
+  }, [card, parentCardOptions]);
 
   // Update assignee once users are loaded if card has userId but no user object
   useEffect(() => {
@@ -237,6 +309,7 @@ export default function EditCardDialog({
             dueDate: dueDate || null,
             priority,
             userId: assignee?.id || null,
+            parentId: parentTask?.id || null,
           },
         },
       });
@@ -377,6 +450,47 @@ export default function EditCardDialog({
             )}
           />
 
+          {/* Parent task selector */}
+          {boardId && (
+            <Autocomplete<ParentCardOption>
+              options={parentCardOptions}
+              value={parentTask}
+              onChange={(_, newValue) => setParentTask(newValue)}
+              getOptionLabel={(option) =>
+                option.suffix ? `${option.suffix} — ${option.title}` : option.title
+              }
+              disabled={loading}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              groupBy={(option) => option.listTitle || ''}
+              filterOptions={(options, { inputValue }) => {
+                const filter = inputValue.toLowerCase();
+                return options.filter(
+                  (o) =>
+                    o.title.toLowerCase().includes(filter) ||
+                    (o.suffix || '').toLowerCase().includes(filter),
+                );
+              }}
+              renderOption={({ key, ...props }, option) => (
+                <li key={option.id} {...props}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                    {option.suffix && (
+                      <Chip label={option.suffix} size="small" color="primary" variant="outlined" sx={{ flexShrink: 0 }} />
+                    )}
+                    <Typography variant="body2" noWrap>{option.title}</Typography>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Батьківська задача (опціонально)"
+                  placeholder="Пошук задачі..."
+                  margin="normal"
+                />
+              )}
+            />
+          )}
+
           <TextField
             fullWidth
             label="Дата виконання (опціонально)"
@@ -403,4 +517,3 @@ export default function EditCardDialog({
     </Dialog>
   );
 }
-

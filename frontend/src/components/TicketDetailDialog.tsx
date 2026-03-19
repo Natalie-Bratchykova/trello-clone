@@ -12,7 +12,7 @@ import {
   Link,
   Button,
 } from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime, Edit } from '@mui/icons-material';
+import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
@@ -61,12 +61,29 @@ export interface TicketDetailCard {
   listId?: string;
   createdAt?: string;
   updatedAt?: string;
+  parentId?: string;
   user?: {
     id: string;
     name: string;
     email?: string;
     profileImage?: string;
   };
+  parent?: {
+    id: string;
+    title: string;
+    suffix?: string;
+  };
+  children?: {
+    id: string;
+    title: string;
+    suffix?: string;
+    priority?: string;
+    dueDate?: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+  }[];
 }
 
 interface TicketDetailDialogProps {
@@ -74,10 +91,11 @@ interface TicketDetailDialogProps {
   onClose: () => void;
   card: TicketDetailCard | null;
   listTitle?: string;
+  boardId?: string;
   onCardUpdated?: () => void;
 }
 
-export default function TicketDetailDialog({ open, onClose, card, listTitle, onCardUpdated }: TicketDetailDialogProps) {
+export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
 
   if (!card) return null;
@@ -184,6 +202,83 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, onC
               <Typography variant="body2" color="text.disabled" sx={{ mb: 2, fontStyle: 'italic' }}>
                 Опис відсутній
               </Typography>
+            )}
+
+            {/* Parent task */}
+            {card.parent && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                  Батьківська задача
+                </Typography>
+                <Link
+                  component={RouterLink}
+                  to={`/task/${card.parent.id}`}
+                  underline="hover"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    textDecoration: 'none',
+                    '&:hover': { backgroundColor: 'action.hover' },
+                  }}
+                >
+                  <AccountTree sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  {card.parent.suffix && (
+                    <Chip label={card.parent.suffix} size="small" color="primary" variant="outlined" />
+                  )}
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {card.parent.title}
+                  </Typography>
+                </Link>
+              </Box>
+            )}
+
+            {/* Children subtasks */}
+            {card.children && card.children.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                  Підзадачі ({card.children.length})
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {card.children.map((child) => (
+                    <Link
+                      key={child.id}
+                      component={RouterLink}
+                      to={`/task/${child.id}`}
+                      underline="none"
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        p: 1,
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        color: 'inherit',
+                        '&:hover': { backgroundColor: 'action.hover' },
+                      }}
+                    >
+                      {child.suffix && (
+                        <Chip label={child.suffix} size="small" color="primary" variant="outlined" sx={{ flexShrink: 0 }} />
+                      )}
+                      <Typography variant="body2" sx={{ fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {child.title}
+                      </Typography>
+                      {child.priority && (
+                        <Chip
+                          label={child.priority === 'HIGH' ? '🔴' : child.priority === 'MEDIUM' ? '🟠' : '🟢'}
+                          size="small"
+                          sx={{ minWidth: 0, flexShrink: 0 }}
+                        />
+                      )}
+                    </Link>
+                  ))}
+                </Box>
+              </Box>
             )}
 
             {/* Comments */}
@@ -303,7 +398,9 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, onC
           dueDate: card.dueDate,
           userId: card.user?.id,
           user: card.user || null,
+          parentId: card.parentId,
         } : null}
+        boardId={boardId}
         onCardUpdated={() => {
           setEditOpen(false);
           onCardUpdated?.();
