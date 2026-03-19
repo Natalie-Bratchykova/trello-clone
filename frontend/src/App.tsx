@@ -8,6 +8,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import BoardPage from './pages/BoardPage';
+import TaskPage from './pages/TaskPage';
 import ProfilePage from './pages/ProfilePage';
 import {DndProvider} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
@@ -148,6 +149,17 @@ function App() {
                             element={
                                 isAuthenticated ? (
                                     <BoardPage />
+                                ) : (
+                                    <Navigate to="/login" replace />
+                                )
+                            }
+                        />
+
+                        <Route
+                            path="/task/:id"
+                            element={
+                                isAuthenticated ? (
+                                    <TaskPage />
                                 ) : (
                                     <Navigate to="/login" replace />
                                 )

@@ -24,12 +24,12 @@ export interface BoardColumnProps {
     };
     lastDroppedCardId?:string | null;
     onDrop:(item:any)=>void;
-
+    onCardClick?:(card: any, listTitle: string) => void;
     setCardDialogState:(state:{open: boolean, listId: string, listTitle: string}) => void;
 
 }
 
-export default function BoardColumn ({list, setCardDialogState, lastDroppedCardId, onDrop}:BoardColumnProps) {
+export default function BoardColumn ({list, setCardDialogState, lastDroppedCardId, onDrop, onCardClick}:BoardColumnProps) {
 
 
     const [{ isOver, canDrop }, dropRef] = useDrop({
@@ -97,7 +97,7 @@ export default function BoardColumn ({list, setCardDialogState, lastDroppedCardI
                 {[...list.cards]
                     .sort((a, b) => a.position - b.position)
                     .map((card) => (
-                    <TicketCard key={card.id} card={card}/>
+                    <TicketCard key={card.id} card={card} onClick={() => onCardClick?.(card, list.title)} />
                     ))}
             </Box>
 

@@ -1,0 +1,378 @@
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useQuery } from '@apollo/client/react';
+import { gql } from '@apollo/client';
+import {
+  Container,
+  Box,
+  Typography,
+  IconButton,
+  Chip,
+  Avatar,
+  Divider,
+  CircularProgress,
+  Alert,
+  Button,
+  Breadcrumbs,
+  Link,
+  Paper,
+} from '@mui/material';
+import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard } from '@mui/icons-material';
+
+const GET_CARD = gql`
+  query GetCard($id: ID!) {
+    card(id: $id) {
+      id
+      title
+      description
+      suffix
+      priority
+      position
+      dueDate
+      createdAt
+      updatedAt
+      listId
+      userId
+      list {
+        id
+        title
+        board {
+          id
+          title
+          color
+        }
+      }
+      user {
+        id
+        name
+        email
+        profileImage
+      }
+    }
+  }
+`;
+
+const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+  LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
+  MEDIUM: { label: 'Середній', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
+  HIGH: { label: 'Високий', color: '#c62828', bg: '#ffebee', icon: '🔴' },
+};
+
+function getDueDateColors(dueDate: string): { bg: string; color: string } {
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffMs = due.getTime() - now.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  if (diffDays < 0)   return { bg: '#d32f2f', color: '#fff' };
+  if (diffDays < 5)   return { bg: '#ffebee', color: '#c62828' };
+  if (diffDays < 14)  return { bg: '#fff3e0', color: '#e65100' };
+  if (diffDays < 30)  return { bg: '#fff9c4', color: '#f57f17' };
+  return { bg: '#e8f5e9', color: '#2e7d32' };
+}
+
+function getDueDateLabel(dueDate: string): string {
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffMs = due.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return `Прострочено на ${Math.abs(diffDays)} дн.`;
+  if (diffDays === 0) return 'Сьогодні';
+  if (diffDays === 1) return 'Завтра';
+  if (diffDays < 7) return `Через ${diffDays} дн.`;
+  if (diffDays < 30) return `Через ${Math.floor(diffDays / 7)} тижн.`;
+  return `Через ${Math.floor(diffDays / 30)} міс.`;
+}
+
+interface CardData {
+  card: {
+    id: string;
+    title: string;
+    description?: string;
+    suffix?: string;
+    priority?: string;
+    position: number;
+    dueDate?: string;
+    createdAt: string;
+    updatedAt: string;
+    listId: string;
+    userId?: string;
+    list?: {
+      id: string;
+      title: string;
+      board?: {
+        id: string;
+        title: string;
+        color: string;
+      };
+    };
+    user?: {
+      id: string;
+      name: string;
+      email?: string;
+      profileImage?: string;
+    };
+  };
+}
+
+export default function TaskPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const { loading, error, data } = useQuery<CardData>(GET_CARD, {
+    variables: { id },
+    skip: !id,
+  });
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !data?.card) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="error">
+          {error ? `Помилка: ${error.message}` : 'Задачу не знайдено'}
+        </Alert>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mt: 2 }}>
+          Повернутись назад
+        </Button>
+      </Container>
+    );
+  }
+
+  const card = data.card;
+  const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
+  const boardColor = card.list?.board?.color || '#0079bf';
+
+  return (
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', pb: 4 }}>
+      {/* Header */}
+      <Box sx={{ backgroundColor: boardColor, color: 'white', py: 2, px: 3, mb: 3 }}>
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={() => navigate(-1)} sx={{ color: 'white' }}>
+              <ArrowBack />
+            </IconButton>
+            <Box>
+              {card.suffix && (
+                <Typography variant="body2" sx={{ opacity: 0.85, fontWeight: 600 }}>
+                  {card.suffix}
+                </Typography>
+              )}
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                {card.title}
+              </Typography>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Container maxWidth="lg">
+        {/* Breadcrumbs */}
+        <Breadcrumbs sx={{ mb: 3 }}>
+          <Link component={RouterLink} to="/projects" underline="hover" color="inherit">
+            Проекти
+          </Link>
+          {card.list?.board && (
+            <Link component={RouterLink} to={`/board/${card.list.board.id}`} underline="hover" color="inherit">
+              {card.list.board.title}
+            </Link>
+          )}
+          {card.list && (
+            <Typography color="text.secondary">{card.list.title}</Typography>
+          )}
+          <Typography color="text.primary" fontWeight={600}>
+            {card.suffix || card.title}
+          </Typography>
+        </Breadcrumbs>
+
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Main content */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {/* Description */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Опис
+              </Typography>
+              {card.description ? (
+                <Box
+                  sx={{
+                    '& p': { m: 0, mb: 1 },
+                    '& p:last-child': { mb: 0 },
+                    '& ul, & ol': { pl: 3, m: 0, mb: 1 },
+                    '& h1, & h2, & h3': { mt: 1, mb: 0.5 },
+                    '& blockquote': {
+                      borderLeft: '3px solid',
+                      borderColor: 'divider',
+                      pl: 2,
+                      ml: 0,
+                      color: 'text.secondary',
+                    },
+                    '& pre': {
+                      backgroundColor: 'grey.900',
+                      color: 'grey.100',
+                      p: 1.5,
+                      borderRadius: 1,
+                      overflow: 'auto',
+                    },
+                    '& a': { color: 'primary.main' },
+                    fontSize: '1rem',
+                    lineHeight: 1.8,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: card.description }}
+                />
+              ) : (
+                <Typography variant="body1" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                  Опис відсутній
+                </Typography>
+              )}
+            </Paper>
+          </Box>
+
+          {/* Sidebar */}
+          <Box sx={{ width: { xs: '100%', md: 300 }, flexShrink: 0 }}>
+            <Paper sx={{ p: 3 }}>
+              {/* Status / List */}
+              {card.list && (
+                <SidebarField icon={<ListIcon sx={{ fontSize: 18 }} />} label="Список">
+                  <Chip label={card.list.title} size="small" variant="outlined" />
+                </SidebarField>
+              )}
+
+              {/* Board */}
+              {card.list?.board && (
+                <SidebarField icon={<Dashboard sx={{ fontSize: 18 }} />} label="Проект">
+                  <Chip
+                    label={card.list.board.title}
+                    size="small"
+                    component={RouterLink}
+                    to={`/board/${card.list.board.id}`}
+                    clickable
+                    sx={{ backgroundColor: card.list.board.color, color: 'white', fontWeight: 600 }}
+                  />
+                </SidebarField>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Priority */}
+              {priorityConfig && (
+                <SidebarField icon={<Flag sx={{ fontSize: 18 }} />} label="Пріоритет">
+                  <Chip
+                    label={`${priorityConfig.icon} ${priorityConfig.label}`}
+                    size="small"
+                    sx={{
+                      backgroundColor: priorityConfig.bg,
+                      color: priorityConfig.color,
+                      fontWeight: 600,
+                    }}
+                  />
+                </SidebarField>
+              )}
+
+              {/* Due Date */}
+              {card.dueDate && (() => {
+                const dueDateColors = getDueDateColors(card.dueDate!);
+                return (
+                  <SidebarField icon={<CalendarToday sx={{ fontSize: 18 }} />} label="Дедлайн">
+                    <Box>
+                      <Chip
+                        label={new Date(card.dueDate!).toLocaleDateString('uk-UA', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                        size="small"
+                        sx={{
+                          backgroundColor: dueDateColors.bg,
+                          color: dueDateColors.color,
+                          fontWeight: 600,
+                        }}
+                      />
+                      <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {getDueDateLabel(card.dueDate!)}
+                      </Typography>
+                    </Box>
+                  </SidebarField>
+                );
+              })()}
+
+              {/* Assignee */}
+              {card.user && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <SidebarField icon={<Person sx={{ fontSize: 18 }} />} label="Виконавець">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar
+                        src={card.user.profileImage ? `http://localhost:3000${card.user.profileImage}` : undefined}
+                        sx={{ width: 32, height: 32, fontSize: '0.85rem', bgcolor: 'primary.main' }}
+                      >
+                        {!card.user.profileImage && card.user.name?.[0]?.toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+                          {card.user.name}
+                        </Typography>
+                        {card.user.email && (
+                          <Typography variant="caption" color="text.secondary">
+                            {card.user.email}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </SidebarField>
+                </>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Timestamps */}
+              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Створено">
+                <Typography variant="body2" color="text.secondary">
+                  {new Date(card.createdAt).toLocaleDateString('uk-UA', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Typography>
+              </SidebarField>
+              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Оновлено">
+                <Typography variant="body2" color="text.secondary">
+                  {new Date(card.updatedAt).toLocaleDateString('uk-UA', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Typography>
+              </SidebarField>
+            </Paper>
+          </Box>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function SidebarField({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+        {icon}
+        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {label}
+        </Typography>
+      </Box>
+      {children}
+    </Box>
+  );
+}
+

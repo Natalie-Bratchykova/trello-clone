@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { ArrowBack, Add } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
+import TicketDetailDialog from '../components/TicketDetailDialog';
 import {GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET} from '../helpers/gql/boardGQL';
 import BoardColumn from "../components/BoardColumn.tsx";
 import {gql} from "@apollo/client";
@@ -24,9 +25,16 @@ interface Card {
   description?: string;
   position: number;
   dueDate?: string;
+  suffix?: string;
+  priority?: string;
+  listId?: string;
+  createdAt?: string;
+  updatedAt?: string;
   user?: {
     id: string;
     name: string;
+    email?: string;
+    profileImage?: string;
   };
 }
 
@@ -59,6 +67,8 @@ export default function BoardPage() {
     listId: '',
     listTitle: '',
   });
+
+  const [selectedCard, setSelectedCard] = useState<{ card: Card; listTitle: string } | null>(null);
 
   const { loading, error, data, refetch } = useQuery<{ board: Board }>(GET_BOARD, {
     variables: { id },
@@ -248,7 +258,13 @@ export default function BoardPage() {
           {[...board.lists]
             .sort((a, b) => a.position - b.position)
             .map((list) => (
-             <BoardColumn onDrop={(item)=>handleTicketsDnD(item, list)} list={list} key={list.id} setCardDialogState={setCardDialogState}/>
+             <BoardColumn
+               onDrop={(item)=>handleTicketsDnD(item, list)}
+               list={list}
+               key={list.id}
+               setCardDialogState={setCardDialogState}
+               onCardClick={(card, listTitle) => setSelectedCard({ card, listTitle })}
+             />
             ))}
 
           <Paper
@@ -316,6 +332,13 @@ export default function BoardPage() {
         listId={cardDialogState.listId}
         listTitle={cardDialogState.listTitle}
         onCardCreated={() => refetch()}
+      />
+
+      <TicketDetailDialog
+        open={!!selectedCard}
+        onClose={() => setSelectedCard(null)}
+        card={selectedCard?.card ?? null}
+        listTitle={selectedCard?.listTitle}
       />
     </Box>
   );

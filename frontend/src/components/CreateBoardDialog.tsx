@@ -15,11 +15,12 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 
 const CREATE_BOARD_MUTATION = gql`
-  mutation CreateBoard($title: String!, $color: String!, $userId: ID!) {
-    createBoard(data: { title: $title, color: $color, userId: $userId }) {
+  mutation CreateBoard($title: String!, $color: String!, $userId: ID!, $boardIdentifier: String) {
+    createBoard(data: { title: $title, color: $color, userId: $userId, boardIdentifier: $boardIdentifier }) {
       id
       title
       color
+      boardIdentifier
       createdAt
       updatedAt
     }
@@ -31,9 +32,17 @@ interface CreateBoardData {
     id: string;
     title: string;
     color: string;
+    boardIdentifier: string;
     createdAt: string;
     updatedAt: string;
   };
+}
+
+interface CreateBoardVars {
+  title: string;
+  color: string;
+  userId: string;
+  boardIdentifier?: string;
 }
 
 interface CreateBoardDialogProps {
@@ -64,8 +73,9 @@ export default function CreateBoardDialog({
   onBoardCreated,
 }: CreateBoardDialogProps) {
   const [title, setTitle] = useState('');
+  const [boardIdentifier, setBoardIdentifier] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].value);
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; boardIdentifier?: string }>({});
 
   const [createBoard, { loading }] = useMutation<CreateBoardData>(CREATE_BOARD_MUTATION);
 
@@ -82,13 +92,14 @@ export default function CreateBoardDialog({
 
   const handleClose = () => {
     setTitle('');
+    setBoardIdentifier('');
     setSelectedColor(PRESET_COLORS[0].value);
     setErrors({});
     onClose();
   };
 
   const validateForm = () => {
-    const newErrors: { title?: string } = {};
+    const newErrors: { title?: string; boardIdentifier?: string } = {};
 
     if (!title.trim()) {
       newErrors.title = 'Назва проекту обов\'язкова';
@@ -96,6 +107,16 @@ export default function CreateBoardDialog({
       newErrors.title = 'Назва має бути мінімум 3 символи';
     } else if (title.length > 50) {
       newErrors.title = 'Назва не може перевищувати 50 символів';
+    }
+
+    if (boardIdentifier.trim()) {
+      if (boardIdentifier.trim().length < 2) {
+        newErrors.boardIdentifier = 'Ідентифікатор має бути мінімум 2 символи';
+      } else if (boardIdentifier.trim().length > 10) {
+        newErrors.boardIdentifier = 'Ідентифікатор не може перевищувати 10 символів';
+      } else if (!/^[A-Za-z0-9-]+$/.test(boardIdentifier.trim())) {
+        newErrors.boardIdentifier = 'Ідентифікатор може містити лише літери, цифри та дефіс';
+      }
     }
 
     setErrors(newErrors);
@@ -110,13 +131,16 @@ export default function CreateBoardDialog({
     }
 
     try {
-      const result = await createBoard({
-        variables: {
-          title: title.trim(),
-          color: selectedColor,
-          userId,
-        },
-      });
+      const variables: CreateBoardVars = {
+        title: title.trim(),
+        color: selectedColor,
+        userId,
+      };
+      if (boardIdentifier.trim()) {
+        variables.boardIdentifier = boardIdentifier.trim();
+      }
+
+      const result = await createBoard({ variables });
 
       if (result.data) {
         handleCreateSuccess(result.data);
@@ -165,6 +189,19 @@ export default function CreateBoardDialog({
             margin="normal"
             disabled={loading}
             inputProps={{ maxLength: 50 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Ідентифікатор проекту"
+            placeholder="Наприклад: PROJ або MY-APP"
+            value={boardIdentifier}
+            onChange={(e) => setBoardIdentifier(e.target.value.toUpperCase())}
+            error={!!errors.boardIdentifier}
+            helperText={errors.boardIdentifier || 'Необов\'язково. 2-10 символів (літери, цифри, дефіс). Використовується як префікс для карток.'}
+            margin="normal"
+            disabled={loading}
+            inputProps={{ maxLength: 10 }}
           />
 
           <Box sx={{ mt: 3 }}>
@@ -237,6 +274,11 @@ export default function CreateBoardDialog({
               <Typography variant="h6">
                 {title.trim() || 'Назва проекту'}
               </Typography>
+              {boardIdentifier.trim() && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Ідентифікатор: <strong>{boardIdentifier.trim()}</strong>
+                </Typography>
+              )}
               <Typography variant="caption" color="text.secondary">
                 Створено: {new Date().toLocaleDateString('uk-UA')}
               </Typography>

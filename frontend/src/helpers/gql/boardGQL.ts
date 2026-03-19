@@ -18,9 +18,15 @@ export const GET_BOARD = gql`
           listId
           position
           dueDate
+          suffix
+          priority
+          createdAt
+          updatedAt
           user {
             id
             name
+            email
+            profileImage
           }
         }
       }
