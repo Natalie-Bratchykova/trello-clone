@@ -339,6 +339,10 @@ export default function BoardPage() {
         onClose={() => setSelectedCard(null)}
         card={selectedCard?.card ?? null}
         listTitle={selectedCard?.listTitle}
+        onCardUpdated={() => {
+          setSelectedCard(null);
+          refetch();
+        }}
       />
     </Box>
   );

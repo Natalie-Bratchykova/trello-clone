@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
@@ -16,8 +17,9 @@ import {
   Link,
   Paper,
 } from '@mui/material';
-import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard } from '@mui/icons-material';
+import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard, Edit } from '@mui/icons-material';
 import CommentsSection from "../components/CommentsSection.tsx";
+import EditCardDialog from "../components/EditCardDialog.tsx";
 
 const GET_CARD = gql`
   query GetCard($id: ID!) {
@@ -119,8 +121,9 @@ interface CardData {
 export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [editOpen, setEditOpen] = useState(false);
 
-  const { loading, error, data } = useQuery<CardData>(GET_CARD, {
+  const { loading, error, data, refetch } = useQuery<CardData>(GET_CARD, {
     variables: { id },
     skip: !id,
   });
@@ -159,7 +162,7 @@ export default function TaskPage() {
             <IconButton onClick={() => navigate(-1)} sx={{ color: 'white' }}>
               <ArrowBack />
             </IconButton>
-            <Box>
+            <Box sx={{ flex: 1 }}>
               {card.suffix && (
                 <Typography variant="body2" sx={{ opacity: 0.85, fontWeight: 600 }}>
                   {card.suffix}
@@ -169,6 +172,22 @@ export default function TaskPage() {
                 {card.title}
               </Typography>
             </Box>
+            <Button
+              variant="outlined"
+              startIcon={<Edit />}
+              onClick={() => setEditOpen(true)}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.5)',
+                textTransform: 'none',
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                },
+              }}
+            >
+              Редагувати
+            </Button>
           </Box>
         </Container>
       </Box>
@@ -205,7 +224,8 @@ export default function TaskPage() {
                   sx={{
                     '& p': { m: 0, mb: 1 },
                     '& p:last-child': { mb: 0 },
-                    '& ul, & ol': { pl: 3, m: 0, mb: 1 },
+                    '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
+                    '& li': { wordBreak:'break-word' },
                     '& h1, & h2, & h3': { mt: 1, mb: 0.5 },
                     '& blockquote': {
                       borderLeft: '3px solid',
@@ -364,6 +384,24 @@ export default function TaskPage() {
           </Box>
         </Box>
       </Container>
+
+      <EditCardDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        card={card ? {
+          id: card.id,
+          title: card.title,
+          description: card.description,
+          priority: card.priority,
+          dueDate: card.dueDate,
+          userId: card.userId || undefined,
+          user: card.user || null,
+        } : null}
+        onCardUpdated={() => {
+          setEditOpen(false);
+          refetch();
+        }}
+      />
     </Box>
   );
 }

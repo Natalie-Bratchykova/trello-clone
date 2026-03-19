@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,10 +10,12 @@ import {
   Avatar,
   Divider,
   Link,
+  Button,
 } from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime } from '@mui/icons-material';
+import { Close, CalendarToday, Person, Flag, AccessTime, Edit } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import CommentsSection from './CommentsSection';
+import EditCardDialog from './EditCardDialog';
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
@@ -71,9 +74,12 @@ interface TicketDetailDialogProps {
   onClose: () => void;
   card: TicketDetailCard | null;
   listTitle?: string;
+  onCardUpdated?: () => void;
 }
 
-export default function TicketDetailDialog({ open, onClose, card, listTitle }: TicketDetailDialogProps) {
+export default function TicketDetailDialog({ open, onClose, card, listTitle, onCardUpdated }: TicketDetailDialogProps) {
+  const [editOpen, setEditOpen] = useState(false);
+
   if (!card) return null;
 
   const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
@@ -118,9 +124,20 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle }: T
             </Typography>
           )}
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ mt: 0.5 }}>
-          <Close />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Edit />}
+            onClick={() => setEditOpen(true)}
+            sx={{ textTransform: 'none' }}
+          >
+            Редагувати
+          </Button>
+          <IconButton onClick={onClose} size="small">
+            <Close />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 1 }}>
@@ -140,7 +157,8 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle }: T
                   mb: 2,
                   '& p': { m: 0, mb: 1 },
                   '& p:last-child': { mb: 0 },
-                  '& ul, & ol': { pl: 3, m: 0, mb: 1 },
+                  '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
+                  '& li': { wordBreak:'break-word' },
                   '& h1, & h2, & h3': { mt: 1, mb: 0.5 },
                   '& blockquote': {
                     borderLeft: '3px solid',
@@ -273,6 +291,24 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle }: T
           </Box>
         </Box>
       </DialogContent>
+
+      <EditCardDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        card={card ? {
+          id: card.id,
+          title: card.title,
+          description: card.description,
+          priority: card.priority,
+          dueDate: card.dueDate,
+          userId: card.user?.id,
+          user: card.user || null,
+        } : null}
+        onCardUpdated={() => {
+          setEditOpen(false);
+          onCardUpdated?.();
+        }}
+      />
     </Dialog>
   );
 }
