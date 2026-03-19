@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Close, CalendarToday, Person, Flag, AccessTime } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
+import CommentsSection from './CommentsSection';
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
@@ -166,6 +167,10 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle }: T
                 Опис відсутній
               </Typography>
             )}
+
+            {/* Comments */}
+            <Divider sx={{ my: 3 }} />
+            <CommentsSection cardId={card.id} />
           </Box>
 
           {/* Sidebar */}

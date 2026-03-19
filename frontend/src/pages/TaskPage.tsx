@@ -17,6 +17,7 @@ import {
   Paper,
 } from '@mui/material';
 import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard } from '@mui/icons-material';
+import CommentsSection from "../components/CommentsSection.tsx";
 
 const GET_CARD = gql`
   query GetCard($id: ID!) {
@@ -231,6 +232,11 @@ export default function TaskPage() {
                   Опис відсутній
                 </Typography>
               )}
+            </Paper>
+
+            {/* Comments */}
+            <Paper sx={{ p: 3 }}>
+              <CommentsSection cardId={card.id} />
             </Paper>
           </Box>
 
