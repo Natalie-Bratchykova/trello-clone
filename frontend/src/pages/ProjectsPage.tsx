@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -16,9 +16,7 @@ import EmptyState from '../components/EmptyState';
 import CreateBoardDialog from '../components/CreateBoardDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 
-import {GET_USER_BOARDS, DELETE_BOARD_MUTATION} from "../helpers/gql/boardGQL.ts";
-
-
+import { GET_ALL_BOARDS, DELETE_BOARD_MUTATION } from '../helpers/gql/boardGQL.ts';
 
 interface Board {
   id: string;
@@ -33,7 +31,7 @@ interface Board {
 interface ProjectsPageProps {
   isAuthenticated: boolean;
   userId?: string;
-  onLogin: () => void; // Залишаємо для сумісності, але не використовуємо
+  onLogin: () => void;
 }
 
 export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPageProps) {
@@ -58,9 +56,8 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     severity: 'success',
   });
 
-  const { loading, error, data, refetch } = useQuery<{ userBoards: Board[] }, { userId: string }>(GET_USER_BOARDS, {
-    variables: { userId: userId || '' },
-    skip: !isAuthenticated || !userId,
+  const { loading, error, data } = useQuery<{ boards: Board[] }>(GET_ALL_BOARDS, {
+    skip: !isAuthenticated,
   });
 
   const [deleteBoard, { loading: deleteLoading }] = useMutation(DELETE_BOARD_MUTATION, {
@@ -81,11 +78,9 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     },
   });
 
-
-
   useEffect(() => {
-    if (data?.userBoards) {
-      setBoards(data.userBoards);
+    if (data?.boards) {
+      setBoards(data.boards);
     }
   }, [data]);
 
@@ -259,4 +254,3 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     </Container>
   );
 }
-

@@ -81,6 +81,18 @@ export const GET_USER_BOARDS = gql`
   }
 `;
 
+export const GET_ALL_BOARDS = gql`
+  query GetAllBoards {
+    boards {
+      id
+      title
+      color
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const DELETE_BOARD_MUTATION = gql`
   mutation DeleteBoard($id: ID!) {
     deleteBoard(id: $id)

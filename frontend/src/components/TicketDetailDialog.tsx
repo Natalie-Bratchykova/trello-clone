@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
+  DialogContentText,
   Box,
   Typography,
   IconButton,
@@ -12,10 +14,33 @@ import {
   Link,
   Button,
 } from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree } from '@mui/icons-material';
+import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, Warning, PersonAdd } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
+import { gql } from '@apollo/client';
+import { useMutation, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
+
+const DELETE_CARD_MUTATION = gql`
+  mutation DeleteCard($id: ID!) {
+    deleteCard(id: $id)
+  }
+`;
+
+const ASSIGN_USER_MUTATION = gql`
+  mutation AssignUserToCard($cardId: ID!, $userId: ID) {
+    assignUser(cardId: $cardId, userId: $userId) {
+      id
+      userId
+      user {
+        id
+        name
+        email
+        profileImage
+      }
+    }
+  }
+`;
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
@@ -93,10 +118,58 @@ interface TicketDetailDialogProps {
   listTitle?: string;
   boardId?: string;
   onCardUpdated?: () => void;
+  onCardDeleted?: () => void;
 }
 
-export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated }: TicketDetailDialogProps) {
+export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [displayUser, setDisplayUser] = useState(card?.user || null);
+  const client = useApolloClient();
+
+  const [deleteCard, { loading: deleting }] = useMutation(DELETE_CARD_MUTATION);
+  const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_MUTATION);
+
+  // Sync displayUser when card prop changes (e.g. dialog re-opened with different card)
+  useEffect(() => {
+    setDisplayUser(card?.user || null);
+  }, [card?.user?.id, card?.id]);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAssignedToMe = displayUser?.id === currentUser?.id;
+
+  const handleDelete = async () => {
+    if (!card) return;
+    try {
+      await deleteCard({ variables: { id: card.id } });
+      setDeleteConfirmOpen(false);
+      onClose();
+      onCardDeleted?.();
+    } catch (err) {
+      console.error('Error deleting card:', err);
+    }
+  };
+
+  const handleAssignMe = async () => {
+    if (!card || !currentUser?.id) return;
+    try {
+      const { data: assignData } = await assignUser({ variables: { cardId: card.id, userId: currentUser.id } });
+      if (assignData?.assignUser) {
+        // Update local state immediately — no blink
+        setDisplayUser(assignData.assignUser.user);
+        // Also update Apollo cache for other components
+        client.cache.modify({
+          id: client.cache.identify({ __typename: 'CardObject', id: card.id }),
+          fields: {
+            userId: () => assignData.assignUser.userId,
+            user: () => assignData.assignUser.user,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Error assigning user:', err);
+    }
+  };
 
   if (!card) return null;
 
@@ -152,6 +225,16 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           >
             Редагувати
           </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="error"
+            startIcon={<Delete />}
+            onClick={() => setDeleteConfirmOpen(true)}
+            sx={{ textTransform: 'none' }}
+          >
+            Видалити
+          </Button>
           <IconButton onClick={onClose} size="small">
             <Close />
           </IconButton>
@@ -173,6 +256,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                   borderRadius: 1,
                   p: 2,
                   mb: 2,
+                  wordBreak:'break-word',
                   '& p': { m: 0, mb: 1 },
                   '& p:last-child': { mb: 0 },
                   '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
@@ -331,27 +415,42 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             })()}
 
             {/* Assignee */}
-            {card.user && (
+            {displayUser && (
               <DetailField icon={<Person sx={{ fontSize: 18 }} />} label="Виконавець">
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Avatar
-                    src={card.user.profileImage ? `http://localhost:3000${card.user.profileImage}` : undefined}
+                    src={displayUser.profileImage ? `http://localhost:3000${displayUser.profileImage}` : undefined}
                     sx={{ width: 28, height: 28, fontSize: '0.8rem', bgcolor: 'primary.main' }}
                   >
-                    {!card.user.profileImage && card.user.name?.[0]?.toUpperCase()}
+                    {!displayUser.profileImage && displayUser.name?.[0]?.toUpperCase()}
                   </Avatar>
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
-                      {card.user.name}
+                      {displayUser.name}
                     </Typography>
-                    {card.user.email && (
+                    {displayUser.email && (
                       <Typography variant="caption" color="text.secondary">
-                        {card.user.email}
+                        {displayUser.email}
                       </Typography>
                     )}
                   </Box>
                 </Box>
               </DetailField>
+            )}
+
+            {/* Assign to me button */}
+            {!isAssignedToMe && currentUser?.id && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PersonAdd sx={{ fontSize: 16 }} />}
+                onClick={handleAssignMe}
+                disabled={assigning}
+                fullWidth
+                sx={{ textTransform: 'none', mb: 2 }}
+              >
+                {assigning ? 'Призначення...' : 'Призначити на мене'}
+              </Button>
             )}
 
             <Divider sx={{ my: 2 }} />
@@ -406,6 +505,32 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           onCardUpdated?.();
         }}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Warning color="error" />
+          Видалити задачу?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Ви дійсно хочете видалити задачу <strong>"{card.title}"</strong>?
+          </DialogContentText>
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
+            <Typography variant="body2">
+              ⚠️ Це також видалить всі коментарі та підзадачі будуть від'єднані. Цю дію не можна скасувати.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
+            Скасувати
+          </Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={deleting}>
+            {deleting ? 'Видалення...' : 'Так, видалити'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

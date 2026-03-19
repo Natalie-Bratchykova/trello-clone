@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useMutation, useApolloClient } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import {
   Container,
@@ -16,8 +16,16 @@ import {
   Breadcrumbs,
   Link,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
-import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard, Edit } from '@mui/icons-material';
+import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard, Edit, Delete, Warning, PersonAdd } from '@mui/icons-material';
 import CommentsSection from "../components/CommentsSection.tsx";
 import EditCardDialog from "../components/EditCardDialog.tsx";
 
@@ -66,6 +74,55 @@ const GET_CARD = gql`
           id
           name
         }
+      }
+    }
+  }
+`;
+
+const GET_BOARD_LISTS = gql`
+  query GetBoardListsForTask($boardId: ID!) {
+    boardLists(boardId: $boardId) {
+      id
+      title
+      position
+    }
+  }
+`;
+
+const UPDATE_CARD_LIST = gql`
+  mutation UpdateCardList($id: ID!, $data: UpdateCardInput!) {
+    updateCard(id: $id, data: $data) {
+      id
+      listId
+      list {
+        id
+        title
+        board {
+          id
+          title
+          color
+        }
+      }
+    }
+  }
+`;
+
+const DELETE_CARD_MUTATION = gql`
+  mutation DeleteCardFromTask($id: ID!) {
+    deleteCard(id: $id)
+  }
+`;
+
+const ASSIGN_USER_MUTATION = gql`
+  mutation AssignUserFromTask($cardId: ID!, $userId: ID) {
+    assignUser(cardId: $cardId, userId: $userId) {
+      id
+      userId
+      user {
+        id
+        name
+        email
+        profileImage
       }
     }
   }
@@ -155,12 +212,107 @@ interface CardData {
 export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const client = useApolloClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const { loading, error, data, refetch } = useQuery<CardData>(GET_CARD, {
     variables: { id },
     skip: !id,
   });
+
+  const boardId = data?.card?.list?.board?.id;
+
+  const { data: listsData } = useQuery(GET_BOARD_LISTS, {
+    variables: { boardId },
+    skip: !boardId,
+  });
+
+  const [updateCardList, { loading: updatingList }] = useMutation(UPDATE_CARD_LIST);
+  const [deleteCard, { loading: deletingCard }] = useMutation(DELETE_CARD_MUTATION);
+  const [assignUser, { loading: assigningUser }] = useMutation(ASSIGN_USER_MUTATION);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAssignedToMe = data?.card?.user?.id === currentUser?.id;
+
+  const boardLists: { id: string; title: string; position: number }[] =
+    listsData?.boardLists
+      ? [...listsData.boardLists].sort((a: any, b: any) => a.position - b.position)
+      : [];
+
+  const handleAssignMe = async () => {
+    if (!id || !currentUser?.id) return;
+    try {
+      const { data: assignData } = await assignUser({ variables: { cardId: id, userId: currentUser.id } });
+      if (assignData?.assignUser) {
+        // Update cache directly to avoid page blink
+        client.cache.modify({
+          id: client.cache.identify({ __typename: 'CardObject', id }),
+          fields: {
+            userId: () => assignData.assignUser.userId,
+            user: () => {
+              return assignData.assignUser.user;
+            },
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Error assigning user:', err);
+    }
+  };
+
+  const handleListChange = async (newListId: string) => {
+    if (!id || newListId === data?.card?.listId) return;
+    try {
+      const { data: updateData } = await updateCardList({
+        variables: { id, data: { listId: newListId } },
+      });
+      // Evict board-related data from cache so BoardPage refetches fresh data
+      if (boardId) {
+        client.cache.evict({ id: `BoardObject:${boardId}` });
+        client.cache.evict({
+          id: 'ROOT_QUERY',
+          fieldName: 'board',
+          args: { id: boardId },
+        });
+        client.cache.gc();
+      }
+      // Update card in cache directly — no refetch needed
+      if (updateData?.updateCard) {
+        client.cache.modify({
+          id: client.cache.identify({ __typename: 'CardObject', id }),
+          fields: {
+            listId: () => updateData.updateCard.listId,
+            list: () => updateData.updateCard.list,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Error changing list:', err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    try {
+      await deleteCard({ variables: { id } });
+      // Evict board from cache so BoardPage refreshes
+      if (boardId) {
+        client.cache.evict({ id: `BoardObject:${boardId}` });
+        client.cache.evict({ id: 'ROOT_QUERY', fieldName: 'board', args: { id: boardId } });
+        client.cache.gc();
+      }
+      setDeleteConfirmOpen(false);
+      // Navigate back to the board
+      if (boardId) {
+        navigate(`/board/${boardId}`);
+      } else {
+        navigate(-1);
+      }
+    } catch (err) {
+      console.error('Error deleting card:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -222,6 +374,22 @@ export default function TaskPage() {
             >
               Редагувати
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Delete />}
+              onClick={() => setDeleteConfirmOpen(true)}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.3)',
+                textTransform: 'none',
+                '&:hover': {
+                  borderColor: '#ef5350',
+                  backgroundColor: 'rgba(239,83,80,0.15)',
+                },
+              }}
+            >
+              Видалити
+            </Button>
           </Box>
         </Container>
       </Box>
@@ -256,6 +424,7 @@ export default function TaskPage() {
               {card.description ? (
                 <Box
                   sx={{
+                    wordBreak:'break-word',
                     '& p': { m: 0, mb: 1 },
                     '& p:last-child': { mb: 0 },
                     '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
@@ -381,7 +550,28 @@ export default function TaskPage() {
               {/* Status / List */}
               {card.list && (
                 <SidebarField icon={<ListIcon sx={{ fontSize: 18 }} />} label="Список">
-                  <Chip label={card.list.title} size="small" variant="outlined" />
+                  {boardLists.length > 0 ? (
+                    <FormControl size="small" fullWidth>
+                      <Select
+                        value={card.listId}
+                        onChange={(e) => handleListChange(e.target.value as string)}
+                        disabled={updatingList}
+                        variant="outlined"
+                        sx={{
+                          fontSize: '0.875rem',
+                          '& .MuiSelect-select': { py: 0.75, px: 1.5 },
+                        }}
+                      >
+                        {boardLists.map((list) => (
+                          <MenuItem key={list.id} value={list.id}>
+                            {list.title}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : (
+                    <Chip label={card.list.title} size="small" variant="outlined" />
+                  )}
                 </SidebarField>
               )}
 
@@ -470,6 +660,21 @@ export default function TaskPage() {
                 </>
               )}
 
+              {/* Assign to me button */}
+              {!isAssignedToMe && currentUser?.id && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<PersonAdd sx={{ fontSize: 16 }} />}
+                  onClick={handleAssignMe}
+                  disabled={assigningUser}
+                  fullWidth
+                  sx={{ textTransform: 'none', mb: 2 }}
+                >
+                  {assigningUser ? 'Призначення...' : 'Призначити на мене'}
+                </Button>
+              )}
+
               <Divider sx={{ my: 2 }} />
 
               {/* Timestamps */}
@@ -519,6 +724,32 @@ export default function TaskPage() {
           refetch();
         }}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Warning color="error" />
+          Видалити задачу?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Ви дійсно хочете видалити задачу <strong>"{card.title}"</strong>?
+          </DialogContentText>
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
+            <Typography variant="body2">
+              ⚠️ Це також видалить всі коментарі цієї задачі. Підзадачі будуть від'єднані. Цю дію не можна скасувати.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deletingCard}>
+            Скасувати
+          </Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={deletingCard}>
+            {deletingCard ? 'Видалення...' : 'Так, видалити'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
