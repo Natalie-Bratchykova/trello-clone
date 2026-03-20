@@ -98,3 +98,28 @@ export const DELETE_BOARD_MUTATION = gql`
     deleteBoard(id: $id)
   }
 `;
+
+export const DELETE_ALL_LISTS_EXCEPT_BACKLOG = gql`
+  mutation DeleteAllListsExceptBacklog($boardId: ID!) {
+    deleteAllListsExceptBacklog(boardId: $boardId)
+  }
+`;
+
+export const BULK_DELETE_CARDS_BY_LIST = gql`
+  mutation BulkDeleteCardsByList($listId: ID!) {
+    bulkDeleteCardsByList(listId: $listId)
+  }
+`;
+
+export const BULK_DELETE_CARDS_BY_PRIORITY = gql`
+  mutation BulkDeleteCardsByPriority($priority: CardPriority!, $boardId: ID, $listId: ID) {
+    bulkDeleteCardsByPriority(priority: $priority, boardId: $boardId, listId: $listId)
+  }
+`;
+
+export const BULK_DELETE_ALL_CARDS_BY_BOARD = gql`
+  mutation BulkDeleteAllCardsByBoard($boardId: ID!) {
+    bulkDeleteAllCardsByBoard(boardId: $boardId)
+  }
+`;
+
