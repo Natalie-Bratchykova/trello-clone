@@ -22,7 +22,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-
+import { useTranslation } from 'react-i18next';
 const GET_USERS_QUERY = gql`
   query GetUsersForEdit {
     users {
@@ -147,9 +147,9 @@ export interface EditCardData {
 }
 
 const PRIORITY_OPTIONS = [
-  { value: 'LOW', label: 'Низький', color: '#4caf50' },
-  { value: 'MEDIUM', label: 'Середній', color: '#ff9800' },
-  { value: 'HIGH', label: 'Високий', color: '#f44336' },
+  { value: 'LOW', labelKey: 'priority.low', icon: '🟢' },
+  { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠' },
+  { value: 'HIGH', labelKey: 'priority.high', icon: '🔴' },
 ];
 
 const QUILL_MODULES = {
@@ -195,7 +195,7 @@ export default function EditCardDialog({
   const [assignee, setAssignee] = useState<User | null>(null);
   const [parentTask, setParentTask] = useState<ParentCardOption | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
-
+  const { t } = useTranslation();
   const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_QUERY, {
     skip: !open,
   });
@@ -328,7 +328,7 @@ export default function EditCardDialog({
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Box component="span" sx={{ display: 'block', fontSize: '1.25rem', fontWeight: 600 }}>
-            Редагувати картку
+            {t('editCard.title')}
           </Box>
         </Box>
         <IconButton onClick={handleClose} disabled={loading}>
@@ -341,8 +341,8 @@ export default function EditCardDialog({
           <TextField
             autoFocus
             fullWidth
-            label="Назва картки"
-            placeholder="Наприклад: Зробити дизайн головної сторінки"
+            label={t('createCard.cardName')}
+            placeholder={t('createCard.cardNamePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={!!errors.title}
@@ -353,7 +353,7 @@ export default function EditCardDialog({
 
           <Box sx={{ mt: 2, mb: 1 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              Опис (опціонально)
+              {t('createCard.descriptionOptional')}
             </Typography>
             <Box
               sx={{
@@ -378,18 +378,18 @@ export default function EditCardDialog({
                 onChange={setDescription}
                 modules={QUILL_MODULES}
                 formats={QUILL_FORMATS}
-                placeholder="Додайте детальний опис..."
+                placeholder={t('createCard.descriptionPlaceholder')}
                 readOnly={loading}
               />
             </Box>
           </Box>
 
           <FormControl fullWidth margin="normal">
-            <InputLabel id="priority-label">Пріоритет</InputLabel>
+            <InputLabel id="priority-label">{t('priority.label')}</InputLabel>
             <Select
               labelId="priority-label"
               value={priority}
-              label="Пріоритет"
+              label={t('priority.label')}
               onChange={(e) => setPriority(e.target.value as string)}
               disabled={loading}
             >
@@ -404,7 +404,7 @@ export default function EditCardDialog({
                         backgroundColor: option.color,
                       }}
                     />
-                    {option.label}
+                    {t(option.labelKey)}
                   </Box>
                 </MenuItem>
               ))}
@@ -434,7 +434,7 @@ export default function EditCardDialog({
                     {(option.name || option.email).charAt(0).toUpperCase()}
                   </Avatar>
                   <Box>
-                    <Typography variant="body2">{option.name || '(без імені)'}</Typography>
+                    <Typography variant="body2">{option.name || t('common.noName')}</Typography>
                     <Typography variant="caption" color="text.secondary">{option.email}</Typography>
                   </Box>
                 </Box>
@@ -443,8 +443,8 @@ export default function EditCardDialog({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Виконавець (опціонально)"
-                placeholder="Почніть вводити ім'я..."
+                label={t('assignee.label')}
+                placeholder={t('assignee.placeholder')}
                 margin="normal"
               />
             )}
@@ -483,8 +483,8 @@ export default function EditCardDialog({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Батьківська задача (опціонально)"
-                  placeholder="Пошук задачі..."
+                  label={t('parentTask.label')}
+                  placeholder={t('parentTask.placeholder')}
                   margin="normal"
                 />
               )}
@@ -493,7 +493,7 @@ export default function EditCardDialog({
 
           <TextField
             fullWidth
-            label="Дата виконання (опціонально)"
+            label={t('dueDate.label')}
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
@@ -507,10 +507,10 @@ export default function EditCardDialog({
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleClose} disabled={loading}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? 'Збереження...' : 'Зберегти зміни'}
+            {loading ? t('common.saving') : t('editCard.saveChanges')}
           </Button>
         </DialogActions>
       </form>

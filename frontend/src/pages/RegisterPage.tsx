@@ -15,6 +15,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const REGISTER_MUTATION = gql`
   mutation Register($email: String!, $password: String!, $name: String!) {
@@ -40,6 +41,7 @@ interface RegisterPageProps {
 
 export default function RegisterPage({ onLogin }: RegisterPageProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,27 +80,27 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
     } = {};
 
     if (!name) {
-      newErrors.name = 'Ім\'я обов\'язкове';
+      newErrors.name = t('validation.nameRequired');
     } else if (name.length < 2) {
-      newErrors.name = 'Ім\'я має бути мінімум 2 символи';
+      newErrors.name = t('validation.nameMin');
     }
 
     if (!email) {
-      newErrors.email = 'Email обов\'язковий';
+      newErrors.email = t('validation.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Невірний формат email';
+      newErrors.email = t('validation.emailInvalid');
     }
 
     if (!password) {
-      newErrors.password = 'Пароль обов\'язковий';
+      newErrors.password = t('validation.passwordRequired');
     } else if (password.length < 6) {
-      newErrors.password = 'Пароль має бути мінімум 6 символів';
+      newErrors.password = t('validation.passwordMin');
     }
 
     if (!confirmPassword) {
-      newErrors.confirmPassword = 'Підтвердіть пароль';
+      newErrors.confirmPassword = t('validation.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Паролі не співпадають';
+      newErrors.confirmPassword = t('validation.passwordsMismatch');
     }
 
     setErrors(newErrors);
@@ -151,25 +153,25 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <PersonAdd sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
             <Typography variant="h4" component="h1" gutterBottom>
-              Реєстрація
+              {t('auth.registerTitle')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Створіть новий акаунт TaskBoard
+              {t('auth.registerSubtitle')}
             </Typography>
           </Box>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error.message.includes('email')
-                ? 'Користувач з таким email вже існує'
-                : 'Помилка реєстрації. Спробуйте ще раз'}
+                ? t('auth.registerErrorEmail')
+                : t('auth.registerError')}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Ім'я"
+              label={t('auth.nameLabel')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={!!errors.name}
@@ -181,7 +183,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
 
             <TextField
               fullWidth
-              label="Email"
+              label={t('auth.emailLabel')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -193,7 +195,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
 
             <TextField
               fullWidth
-              label="Пароль"
+              label={t('auth.passwordLabel')}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -217,7 +219,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
 
             <TextField
               fullWidth
-              label="Підтвердження пароля"
+              label={t('auth.confirmPasswordLabel')}
               type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -247,18 +249,18 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
               disabled={loading}
               sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? 'Реєстрація...' : 'Зареєструватися'}
+              {loading ? t('auth.registering') : t('auth.registerButton')}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Вже є акаунт?{' '}
+                {t('auth.hasAccount')}{' '}
                 <Link
                   component={RouterLink}
                   to="/login"
                   sx={{ fontWeight: 600 }}
                 >
-                  Увійти
+                  {t('auth.loginButton')}
                 </Link>
               </Typography>
             </Box>
@@ -268,4 +270,3 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
     </Container>
   );
 }
-

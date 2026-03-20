@@ -15,6 +15,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import  { LOGIN_MUTATION } from '../helpers/gql/userGQL';
 
 
@@ -32,6 +33,7 @@ interface LoginPageProps {
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,15 +54,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email) {
-      newErrors.email = 'Email обов\'язковий';
+      newErrors.email = t('validation.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Невірний формат email';
+      newErrors.email = t('validation.emailInvalid');
     }
 
     if (!password) {
-      newErrors.password = 'Пароль обов\'язковий';
+      newErrors.password = t('validation.passwordRequired');
     } else if (password.length < 6) {
-      newErrors.password = 'Пароль має бути мінімум 6 символів';
+      newErrors.password = t('validation.passwordMin');
     }
 
     setErrors(newErrors);
@@ -111,23 +113,23 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
             <Typography variant="h4" component="h1" gutterBottom>
-              Вхід
+              {t('auth.loginTitle')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Увійдіть у свій акаунт TaskBoard
+              {t('auth.loginSubtitle')}
             </Typography>
           </Box>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              Невірний email або пароль
+              {t('auth.loginError')}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Email"
+              label={t('auth.emailLabel')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -140,7 +142,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
             <TextField
               fullWidth
-              label="Пароль"
+              label={t('auth.passwordLabel')}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -170,18 +172,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               disabled={loading}
               sx={{ mt: 3, mb: 2 }}
             >
-              {loading ? 'Вхід...' : 'Увійти'}
+              {loading ? t('auth.loggingIn') : t('auth.loginButton')}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Немає акаунту?{' '}
+                {t('auth.noAccount')}{' '}
                 <Link
                   component={RouterLink}
                   to="/register"
                   sx={{ fontWeight: 600 }}
                 >
-                  Зареєструватися
+                  {t('auth.registerButton')}
                 </Link>
               </Typography>
             </Box>
@@ -191,4 +193,3 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     </Container>
   );
 }
-

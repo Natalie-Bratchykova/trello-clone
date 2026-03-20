@@ -78,21 +78,6 @@ export default function TicketCard({card, onClick}:TicketCardProps) {
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {card.title}
             </Typography>
-            {card.description && (
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        mt: 0.5,
-                    }}
-                >
-                    {card.description.replace(/<[^>]*>/g, '')}
-                </Typography>
-            )}
             <Box
                 sx={{
                     display: 'flex',

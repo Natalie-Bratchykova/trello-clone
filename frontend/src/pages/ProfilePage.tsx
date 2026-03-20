@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useUserProfileImage } from '../hooks/useUserProfileImage';
+import { useTranslation } from 'react-i18next';
 // GraphQL запити
 import {UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
 import {useUserData} from "../hooks/useUserData.ts";
@@ -47,6 +48,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({userId, userName, userEmail, userRoleId}: ProfilePageProps) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(userName);
@@ -103,7 +105,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
 
       setSnackbar({
         open: true,
-        message: 'Профіль успішно оновлено!',
+        message: t('profile.updateSuccess'),
         severity: 'success',
       });
       setIsEditing(false);
@@ -111,7 +113,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     } catch (err) {
       setSnackbar({
         open: true,
-        message: 'Помилка при оновленні профілю',
+        message: t('profile.updateError'),
         severity: 'error',
       });
       console.error('Error updating profile:', err);
@@ -122,7 +124,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     if (!currentPassword || !newPassword || !confirmPassword) {
       setSnackbar({
         open: true,
-        message: 'Заповніть всі поля',
+        message: t('validation.fillAllFields'),
         severity: 'error',
       });
       return;
@@ -131,7 +133,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     if (newPassword !== confirmPassword) {
       setSnackbar({
         open: true,
-        message: 'Паролі не співпадають',
+        message: t('profile.passwordsMismatch'),
         severity: 'error',
       });
       return;
@@ -140,7 +142,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     if (newPassword.length < 6) {
       setSnackbar({
         open: true,
-        message: 'Пароль повинен містити мінімум 6 символів',
+        message: t('validation.passwordMinChars'),
         severity: 'error',
       });
       return;
@@ -158,7 +160,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
 
       setSnackbar({
         open: true,
-        message: 'Пароль успішно змінено!',
+        message: t('profile.passwordSuccess'),
         severity: 'success',
       });
       setPasswordDialogOpen(false);
@@ -168,7 +170,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     } catch (err) {
       setSnackbar({
         open: true,
-        message: 'Помилка при зміні паролю',
+        message: t('profile.passwordError'),
         severity: 'error',
       });
       console.error('Error changing password:', err);
@@ -188,7 +190,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
   if (error) {
     return (
         <Container maxWidth="lg" sx={{mt: 4, mb: 4}}>
-          <Alert severity="error">Помилка завантаження профілю: {error.message}</Alert>
+          <Alert severity="error">{t('profile.loadError')}: {error.message}</Alert>
         </Container>
     );
   }
@@ -244,7 +246,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
 
               {/* Ім'я та email */}
               <Typography variant="h5" gutterBottom>
-                {user?.name || 'Без імені'}
+                {user?.name || t('common.noName')}
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 {user?.email}
@@ -257,7 +259,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 <Box>
                   <Typography variant="h6">{boards.length}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Проектів
+                    {t('profile.projects')}
                   </Typography>
                 </Box>
               </Box>
@@ -270,7 +272,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                   onClick={() => setPasswordDialogOpen(true)}
                   sx={{mt: 2}}
               >
-                Змінити пароль
+                {t('profile.changePassword')}
               </Button>
             </Paper>
           </Grid>
@@ -281,7 +283,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
             <Paper sx={{p: 3, mb: 3}}>
               <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
                 <Typography variant="h6">
-                  Інформація профілю
+                  {t('profile.title')}
                 </Typography>
                 {!isEditing ? (
                     <Button
@@ -290,7 +292,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                         onClick={handleEditToggle}
                         disabled={updateLoading}
                     >
-                      Редагувати
+                      {t('common.edit')}
                     </Button>
                 ) : (
                     <Button
@@ -299,7 +301,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                         onClick={handleEditToggle}
                         disabled={updateLoading}
                     >
-                      Скасувати
+                      {t('common.cancel')}
                     </Button>
                 )}
               </Box>
@@ -308,7 +310,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 <Grid item xs={12}>
                   <TextField
                       fullWidth
-                      label="Ім'я"
+                      label={t('auth.nameLabel')}
                       value={isEditing ? editedName : user?.name || ''}
                       onChange={(e) => setEditedName(e.target.value)}
                       disabled={!isEditing}
@@ -317,7 +319,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 <Grid item xs={12}>
                   <TextField
                       fullWidth
-                      label="Email"
+                      label={t('auth.emailLabel')}
                       value={isEditing ? editedEmail : user?.email || ''}
                       onChange={(e) => setEditedEmail(e.target.value)}
                       disabled={!isEditing}
@@ -326,8 +328,8 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 </Grid>
                 <Grid item  xs={12}>
                   <FormControl sx={{ minWidth: 120 }}>
-                    <InputLabel>Role</InputLabel>
-                    <Select label={"Роль"} value={user.roleId|| roleId} onChange={(e) => SetRoleId(e.target.value)} disabled={!isEditing} variant={userRoleId}>
+                    <InputLabel>{t('profile.role')}</InputLabel>
+                    <Select label={t('profile.role')} value={user.roleId|| roleId} onChange={(e) => SetRoleId(e.target.value)} disabled={!isEditing} variant={userRoleId}>
                       {roles?.roles?.map(role => {
                         return (<MenuItem key={role.id} value={role.id} selected={Number(role.id) === Number(userRoleId)}>{role.name}</MenuItem>)
                       })}
@@ -337,8 +339,8 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 <Grid item xs={12} sm={6}>
                   <TextField
                       fullWidth
-                      label="Дата реєстрації"
-                      value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString('uk-UA') : ''}
+                      label={t('profile.registrationDate')}
+                      value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') : ''}
                       disabled
                       variant="filled"
                   />
@@ -346,8 +348,8 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                 <Grid item xs={12} sm={6}>
                   <TextField
                       fullWidth
-                      label="Останнє оновлення"
-                      value={user?.updatedAt ? new Date(user.updatedAt).toLocaleDateString('uk-UA') : ''}
+                      label={t('profile.lastUpdate')}
+                      value={user?.updatedAt ? new Date(user.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') : ''}
                       disabled
                       variant="filled"
                   />
@@ -362,7 +364,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                         onClick={handleSave}
                         disabled={updateLoading}
                     >
-                      Зберегти зміни
+                      {t('profile.saveChanges')}
                     </Button>
                   </Box>
               )}
@@ -373,28 +375,28 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
               <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                 <Typography variant="h6">
                   <DashboardIcon sx={{verticalAlign: 'middle', mr: 1}}/>
-                  Мої проекти ({boards.length})
+                  {t('profile.myProjects')} ({boards.length})
                 </Typography>
                 <Button
                     variant="contained"
                     size="small"
                     onClick={() => navigate('/projects')}
                 >
-                  Переглянути всі
+                  {t('common.viewAll')}
                 </Button>
               </Box>
 
               {boards.length === 0 ? (
                   <Box sx={{textAlign: 'center', py: 4}}>
                     <Typography color="text.secondary">
-                      У вас ще немає проектів
+                      {t('profile.noProjects')}
                     </Typography>
                     <Button
                         variant="contained"
                         sx={{mt: 2}}
                         onClick={() => navigate('/projects')}
                     >
-                      Створити перший проект
+                      {t('profile.createFirst')}
                     </Button>
                   </Box>
               ) : (
@@ -428,7 +430,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                           </ListItemAvatar>
                           <ListItemText
                               primary={board.title}
-                              secondary={`Створено: ${new Date(board.createdAt).toLocaleDateString('uk-UA')}`}
+                              secondary={`${t('board.created')}: ${new Date(board.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}`}
                           />
                         </ListItem>
                     ))}
@@ -445,12 +447,12 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
             maxWidth="sm"
             fullWidth
         >
-          <DialogTitle>Змінити пароль</DialogTitle>
+          <DialogTitle>{t('profile.passwordDialog')}</DialogTitle>
           <DialogContent>
             <Box sx={{pt: 2}}>
               <TextField
                   fullWidth
-                  label="Поточний пароль"
+                  label={t('profile.currentPassword')}
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -458,16 +460,16 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
               />
               <TextField
                   fullWidth
-                  label="Новий пароль"
+                  label={t('profile.newPassword')}
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   sx={{mb: 2}}
-                  helperText="Мінімум 6 символів"
+                  helperText={t('profile.passwordHelp')}
               />
               <TextField
                   fullWidth
-                  label="Підтвердження нового паролю"
+                  label={t('profile.confirmNewPassword')}
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -476,14 +478,14 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPasswordDialogOpen(false)}>
-              Скасувати
+              {t('common.cancel')}
             </Button>
             <Button
                 variant="contained"
                 onClick={handlePasswordChange}
                 disabled={updateLoading}
             >
-              Змінити пароль
+              {t('profile.changePassword')}
             </Button>
           </DialogActions>
         </Dialog>

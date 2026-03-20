@@ -1,6 +1,7 @@
 import { gql,  } from "@apollo/client";
 import { useState } from "react";
 import {useMutation} from "@apollo/client/react";
+import { useTranslation } from 'react-i18next';
 
 const UPLOAD_PROFILE_IMAGE = gql`
   mutation UploadProfileImage($userId: ID!, $file: Upload!) {
@@ -13,6 +14,7 @@ const UPLOAD_PROFILE_IMAGE = gql`
 
 export const useUserProfileImage = (userId: string, refetch: () => void) => {
     const [uploadProfileImage] = useMutation(UPLOAD_PROFILE_IMAGE);
+    const { t } = useTranslation();
 
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -33,7 +35,7 @@ export const useUserProfileImage = (userId: string, refetch: () => void) => {
         if (!file.type.startsWith("image/")) {
             setSnackbar({
                 open: true,
-                message: "Будь ласка, виберіть зображення",
+                message: t('profile.selectImage'),
                 severity: "error",
             });
             return;
@@ -42,7 +44,7 @@ export const useUserProfileImage = (userId: string, refetch: () => void) => {
         if (file.size > 10 * 1024 * 1024) {
             setSnackbar({
                 open: true,
-                message: "Розмір файлу не повинен перевищувати 10MB",
+                message: t('profile.fileSizeLimit'),
                 severity: "error",
             });
             return;
@@ -55,7 +57,7 @@ export const useUserProfileImage = (userId: string, refetch: () => void) => {
 
             setSnackbar({
                 open: true,
-                message: "Фото профілю оновлено!",
+                message: t('profile.photoUpdated'),
                 severity: "success",
             });
 
@@ -63,7 +65,7 @@ export const useUserProfileImage = (userId: string, refetch: () => void) => {
         } catch (err) {
             setSnackbar({
                 open: true,
-                message: "Помилка при завантаженні фото",
+                message: t('profile.photoError'),
                 severity: "error",
             });
         }

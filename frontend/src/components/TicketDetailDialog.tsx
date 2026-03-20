@@ -20,6 +20,7 @@ import { gql } from '@apollo/client';
 import { useMutation, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
+import { useTranslation } from 'react-i18next';
 
 const DELETE_CARD_MUTATION = gql`
   mutation DeleteCard($id: ID!) {
@@ -42,10 +43,10 @@ const ASSIGN_USER_MUTATION = gql`
   }
 `;
 
-const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
-  MEDIUM: { label: 'Середній', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
-  HIGH: { label: 'Високий', color: '#c62828', bg: '#ffebee', icon: '🔴' },
+const PRIORITY_CONFIG: Record<string, { labelKey: string; color: string; bg: string; icon: string }> = {
+  LOW: { labelKey: 'priority.low', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
+  MEDIUM: { labelKey: 'priority.medium', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
+  HIGH: { labelKey: 'priority.high', color: '#c62828', bg: '#ffebee', icon: '🔴' },
 };
 
 function getDueDateColors(dueDate: string): { bg: string; color: string } {
@@ -61,18 +62,18 @@ function getDueDateColors(dueDate: string): { bg: string; color: string } {
   return { bg: '#e8f5e9', color: '#2e7d32' };
 }
 
-function getDueDateLabel(dueDate: string): string {
+function getDueDateLabel(dueDate: string, t: any): string {
   const now = new Date();
   const due = new Date(dueDate);
   const diffMs = due.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return `Прострочено на ${Math.abs(diffDays)} дн.`;
-  if (diffDays === 0) return 'Сьогодні';
-  if (diffDays === 1) return 'Завтра';
-  if (diffDays < 7) return `Через ${diffDays} дн.`;
-  if (diffDays < 30) return `Через ${Math.floor(diffDays / 7)} тижн.`;
-  return `Через ${Math.floor(diffDays / 30)} міс.`;
+  if (diffDays < 0) return t('dueDate.overdue', { days: Math.abs(diffDays) });
+  if (diffDays === 0) return t('dueDate.today');
+  if (diffDays === 1) return t('dueDate.tomorrow');
+  if (diffDays < 7) return t('dueDate.inDays', { days: diffDays });
+  if (diffDays < 30) return t('dueDate.inWeeks', { weeks: Math.floor(diffDays / 7) });
+  return t('dueDate.inMonths', { months: Math.floor(diffDays / 30) });
 }
 
 export interface TicketDetailCard {
@@ -126,6 +127,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(card?.user || null);
   const client = useApolloClient();
+  const { t, i18n } = useTranslation();
 
   const [deleteCard, { loading: deleting }] = useMutation(DELETE_CARD_MUTATION);
   const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_MUTATION);
@@ -211,7 +213,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           </Typography>
           {listTitle && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              у списку <strong>{listTitle}</strong>
+              {t('ticketDetail.inList')} <strong>{listTitle}</strong>
             </Typography>
           )}
         </Box>
@@ -223,7 +225,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             onClick={() => setEditOpen(true)}
             sx={{ textTransform: 'none' }}
           >
-            Редагувати
+            {t('common.edit')}
           </Button>
           <Button
             variant="outlined"
@@ -233,7 +235,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             onClick={() => setDeleteConfirmOpen(true)}
             sx={{ textTransform: 'none' }}
           >
-            Видалити
+            {t('common.delete')}
           </Button>
           <IconButton onClick={onClose} size="small">
             <Close />
@@ -247,7 +249,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* Description */}
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-              Опис
+              {t('ticketDetail.description')}
             </Typography>
             {card.description ? (
               <Box
@@ -284,7 +286,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
               />
             ) : (
               <Typography variant="body2" color="text.disabled" sx={{ mb: 2, fontStyle: 'italic' }}>
-                Опис відсутній
+                {t('ticketDetail.noDescription')}
               </Typography>
             )}
 
@@ -292,7 +294,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             {card.parent && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                  Батьківська задача
+                  {t('parentTask.title')}
                 </Typography>
                 <Link
                   component={RouterLink}
@@ -325,7 +327,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             {card.children && card.children.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                  Підзадачі ({card.children.length})
+                  {t('ticketDetail.subtasks', { count: card.children.length })}
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                   {card.children.map((child) => (
@@ -374,9 +376,9 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           <Box sx={{ width: { xs: '100%', sm: 240 }, flexShrink: 0 }}>
             {/* Priority */}
             {priorityConfig && (
-              <DetailField icon={<Flag sx={{ fontSize: 18 }} />} label="Пріоритет">
+              <DetailField icon={<Flag sx={{ fontSize: 18 }} />} label={t('priority.label')}>
                 <Chip
-                  label={`${priorityConfig.icon} ${priorityConfig.label}`}
+                  label={`${priorityConfig.icon} ${t(priorityConfig.labelKey)}`}
                   size="small"
                   sx={{
                     backgroundColor: priorityConfig.bg,
@@ -391,10 +393,10 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
             {card.dueDate && (() => {
               const dueDateColors = getDueDateColors(card.dueDate!);
               return (
-                <DetailField icon={<CalendarToday sx={{ fontSize: 18 }} />} label="Дедлайн">
+                <DetailField icon={<CalendarToday sx={{ fontSize: 18 }} />} label={t('dueDate.deadline')}>
                   <Box>
                     <Chip
-                      label={new Date(card.dueDate!).toLocaleDateString('uk-UA', {
+                      label={new Date(card.dueDate!).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
@@ -407,7 +409,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                       }}
                     />
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {getDueDateLabel(card.dueDate!)}
+                      {getDueDateLabel(card.dueDate!, t)}
                     </Typography>
                   </Box>
                 </DetailField>
@@ -416,7 +418,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
 
             {/* Assignee */}
             {displayUser && (
-              <DetailField icon={<Person sx={{ fontSize: 18 }} />} label="Виконавець">
+              <DetailField icon={<Person sx={{ fontSize: 18 }} />} label={t('filters.assignees')}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Avatar
                     src={displayUser.profileImage ? `http://localhost:3000${displayUser.profileImage}` : undefined}
@@ -449,7 +451,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                 fullWidth
                 sx={{ textTransform: 'none', mb: 2 }}
               >
-                {assigning ? 'Призначення...' : 'Призначити на мене'}
+                {assigning ? t('assignee.assigning') : t('assignee.assignMe')}
               </Button>
             )}
 
@@ -457,9 +459,9 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
 
             {/* Timestamps */}
             {card.createdAt && (
-              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Створено">
+              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.createdAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.createdAt).toLocaleDateString('uk-UA', {
+                  {new Date(card.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -470,9 +472,9 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
               </DetailField>
             )}
             {card.updatedAt && (
-              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Оновлено">
+              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.updatedAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.updatedAt).toLocaleDateString('uk-UA', {
+                  {new Date(card.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -510,24 +512,24 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Warning color="error" />
-          Видалити задачу?
+          {t('deleteConfirm.deleteTask')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Ви дійсно хочете видалити задачу <strong>"{card.title}"</strong>?
+            {t('deleteConfirm.deleteTaskConfirm')} <strong>"{card.title}"</strong>?
           </DialogContentText>
           <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
             <Typography variant="body2">
-              ⚠️ Це також видалить всі коментарі та підзадачі будуть від'єднані. Цю дію не можна скасувати.
+              {t('deleteConfirm.deleteTaskWarning')}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleDelete} variant="contained" color="error" disabled={deleting}>
-            {deleting ? 'Видалення...' : 'Так, видалити'}
+            {deleting ? t('common.deleting') : t('deleteConfirm.yesDelete')}
           </Button>
         </DialogActions>
       </Dialog>

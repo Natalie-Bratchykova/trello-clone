@@ -22,6 +22,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { useTranslation } from 'react-i18next';
 
 const GET_USERS_QUERY = gql`
   query GetUsers {
@@ -108,9 +109,9 @@ interface CreateCardData {
 }
 
 const PRIORITY_OPTIONS = [
-  { value: 'LOW', label: 'Низький', color: '#4caf50' },
-  { value: 'MEDIUM', label: 'Середній', color: '#ff9800' },
-  { value: 'HIGH', label: 'Високий', color: '#f44336' },
+  { value: 'LOW', labelKey: 'priority.low', color: '#4caf50' },
+  { value: 'MEDIUM', labelKey: 'priority.medium', color: '#ff9800' },
+  { value: 'HIGH', labelKey: 'priority.high', color: '#f44336' },
 ];
 
 const QUILL_MODULES = {
@@ -152,7 +153,7 @@ export default function CreateCardDialog({
   onCardCreated,
 }: CreateCardDialogProps) {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const { t } = useTranslation();  const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('LOW');
   const [assignee, setAssignee] = useState<User | null>(null);
@@ -203,9 +204,9 @@ export default function CreateCardDialog({
     const newErrors: { title?: string } = {};
 
     if (!title.trim()) {
-      newErrors.title = 'Назва картки обов\'язкова';
+      newErrors.title = t('validation.cardTitleRequired');
     } else if (title.trim().length < 2) {
-      newErrors.title = 'Назва має бути мінімум 2 символи';
+      newErrors.title = t('validation.cardTitleMin');
     }
 
     setErrors(newErrors);
@@ -250,10 +251,10 @@ export default function CreateCardDialog({
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Box component="span" sx={{ display: 'block', fontSize: '1.25rem', fontWeight: 600 }}>
-            Створити картку
+            {t('createCard.title')}
           </Box>
           <Typography variant="caption" color="text.secondary">
-            у списку "{listTitle}"
+            {t('createCard.inList', { listTitle })}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} disabled={loading}>
@@ -266,8 +267,8 @@ export default function CreateCardDialog({
           <TextField
             autoFocus
             fullWidth
-            label="Назва картки"
-            placeholder="Наприклад: Зробити дизайн головної сторінки"
+            label={t('createCard.cardName')}
+            placeholder={t('createCard.cardNamePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={!!errors.title}
@@ -278,7 +279,7 @@ export default function CreateCardDialog({
 
           <Box sx={{ mt: 2, mb: 1 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              Опис (опціонально)
+              {t('createCard.descriptionOptional')}
             </Typography>
             <Box
               sx={{
@@ -303,18 +304,18 @@ export default function CreateCardDialog({
                 onChange={setDescription}
                 modules={QUILL_MODULES}
                 formats={QUILL_FORMATS}
-                placeholder="Додайте детальний опис..."
+                placeholder={t('createCard.descriptionPlaceholder')}
                 readOnly={loading}
               />
             </Box>
           </Box>
 
           <FormControl fullWidth margin="normal">
-            <InputLabel id="priority-label">Пріоритет</InputLabel>
+            <InputLabel id="priority-label">{t('priority.label')}</InputLabel>
             <Select
               labelId="priority-label"
               value={priority}
-              label="Пріоритет"
+              label={t('priority.label')}
               onChange={(e) => setPriority(e.target.value as string)}
               disabled={loading}
             >
@@ -329,7 +330,7 @@ export default function CreateCardDialog({
                         backgroundColor: option.color,
                       }}
                     />
-                    {option.label}
+                    {t(option.labelKey)}
                   </Box>
                 </MenuItem>
               ))}
@@ -359,7 +360,7 @@ export default function CreateCardDialog({
                     {(option.name || option.email).charAt(0).toUpperCase()}
                   </Avatar>
                   <Box>
-                    <Typography variant="body2">{option.name || '(без імені)'}</Typography>
+                    <Typography variant="body2">{option.name || t('common.noName')}</Typography>
                     <Typography variant="caption" color="text.secondary">{option.email}</Typography>
                   </Box>
                 </Box>
@@ -368,8 +369,8 @@ export default function CreateCardDialog({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Виконавець (опціонально)"
-                placeholder="Почніть вводити ім'я..."
+                label={t('assignee.label')}
+                placeholder={t('assignee.placeholder')}
                 margin="normal"
               />
             )}
@@ -408,8 +409,8 @@ export default function CreateCardDialog({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Батьківська задача (опціонально)"
-                  placeholder="Пошук задачі..."
+                  label={t('parentTask.label')}
+                  placeholder={t('parentTask.placeholder')}
                   margin="normal"
                 />
               )}
@@ -418,7 +419,7 @@ export default function CreateCardDialog({
 
           <TextField
             fullWidth
-            label="Дата виконання (опціонально)"
+            label={t('dueDate.label')}
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
@@ -432,10 +433,10 @@ export default function CreateCardDialog({
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleClose} disabled={loading}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? 'Створення...' : 'Створити картку'}
+            {loading ? t('common.creating') : t('createCard.createButton')}
           </Button>
         </DialogActions>
       </form>

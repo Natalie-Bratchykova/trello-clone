@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { Edit, Delete, Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
 
@@ -27,6 +28,7 @@ interface BoardCardProps {
 
 export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const handleOpen = () => {
     navigate(`/board/${board.id}`);
@@ -67,7 +69,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           {board.listsCount !== undefined && (
             <Chip
-              label={`${board.listsCount} списків`}
+              label={`${board.listsCount} ${t('board.lists')}`}
               size="small"
               color="primary"
               variant="outlined"
@@ -75,7 +77,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
           )}
           {board.cardsCount !== undefined && (
             <Chip
-              label={`${board.cardsCount} карток`}
+              label={`${board.cardsCount} ${t('board.cards')}`}
               size="small"
               color="secondary"
               variant="outlined"
@@ -84,7 +86,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
         </Box>
 
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          Створено: {new Date(board.createdAt).toLocaleDateString('uk-UA')}
+          {t('board.created')}: {new Date(board.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
         </Typography>
       </CardContent>
 
@@ -95,7 +97,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
           onClick={handleOpen}
           variant="contained"
         >
-          Відкрити
+          {t('board.open')}
         </Button>
         <Box>
           <Button
@@ -103,7 +105,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
             startIcon={<Edit />}
             onClick={() => navigate(`/board/${board.id}/edit`)}
           >
-            Редагувати
+            {t('board.editBoard')}
           </Button>
           {onDelete && (
             <Button
@@ -112,7 +114,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
               startIcon={<Delete />}
               onClick={() => onDelete(board.id)}
             >
-              Видалити
+              {t('board.deleteBoard')}
             </Button>
           )}
         </Box>
@@ -120,4 +122,3 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
     </Card>
   );
 }
-

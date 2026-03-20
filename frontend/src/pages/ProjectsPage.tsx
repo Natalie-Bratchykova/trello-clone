@@ -10,6 +10,7 @@ import {
   Snackbar,
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import BoardCard from '../components/BoardCard';
 import ProjectsSkeleton from '../components/ProjectsSkeleton';
 import EmptyState from '../components/EmptyState';
@@ -35,6 +36,7 @@ interface ProjectsPageProps {
 }
 
 export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPageProps) {
+  const { t } = useTranslation();
   const [boards, setBoards] = useState<Board[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteDialogState, setDeleteDialogState] = useState<{
@@ -64,7 +66,7 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     onCompleted: () => {
       setSnackbar({
         open: true,
-        message: 'Проект успішно видалено',
+        message: t('projects.deleteSuccess'),
         severity: 'success',
       });
       setDeleteDialogState({ open: false, boardId: null, boardTitle: '' });
@@ -72,7 +74,7 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     onError: (error) => {
       setSnackbar({
         open: true,
-        message: `Помилка видалення: ${error.message}`,
+        message: t('projects.deleteError', { message: error.message }),
         severity: 'error',
       });
     },
@@ -116,7 +118,7 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     setBoards([newBoard, ...boards]);
     setSnackbar({
       open: true,
-      message: 'Проект успішно створено!',
+      message: t('projects.createSuccess'),
       severity: 'success',
     });
   };
@@ -133,7 +135,7 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
     return (
       <Container maxWidth="lg" sx={{ mt: 4 }}>
         <Alert severity="error">
-          Помилка завантаження проектів: {error.message}
+          {t('projects.loadError', { message: error.message })}
         </Alert>
       </Container>
     );
@@ -144,12 +146,12 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Мої проекти
+            {t('projects.myProjects')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {boards.length === 0
-              ? 'У вас поки немає проектів. Створіть свій перший проект!'
-              : `Всього проектів: ${boards.length}`}
+              ? t('projects.noProjectsYet')
+              : t('projects.totalProjects', { count: boards.length })}
           </Typography>
         </Box>
         <Button
@@ -158,7 +160,7 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
           onClick={handleCreateBoard}
           size="large"
         >
-          Створити проект
+          {t('projects.createProject')}
         </Button>
       </Box>
       {boards.length === 0 ? (
@@ -174,17 +176,17 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
           }}
         >
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Немає проектів
+            {t('projects.noProjects')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Почніть з створення вашого першого проекту
+            {t('projects.startCreating')}
           </Typography>
           <Button
             variant="outlined"
             startIcon={<Add />}
             onClick={handleCreateBoard}
           >
-            Створити проект
+            {t('projects.createProject')}
           </Button>
         </Box>
       ) : (

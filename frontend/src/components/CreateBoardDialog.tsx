@@ -13,6 +13,7 @@ import {
 import { Close } from '@mui/icons-material';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
+import { useTranslation } from 'react-i18next';
 
 const CREATE_BOARD_MUTATION = gql`
   mutation CreateBoard($title: String!, $color: String!, $userId: ID!, $boardIdentifier: String) {
@@ -52,19 +53,9 @@ interface CreateBoardDialogProps {
   onBoardCreated: (board: any) => void;
 }
 
-// Preset colors for boards
-const PRESET_COLORS = [
-  { name: 'Синій', value: '#0079bf' },
-  { name: 'Зелений', value: '#61bd4f' },
-  { name: 'Помаранчевий', value: '#ff9f1a' },
-  { name: 'Червоний', value: '#eb5a46' },
-  { name: 'Фіолетовий', value: '#c377e0' },
-  { name: 'Рожевий', value: '#ff78cb' },
-  { name: 'Блакитний', value: '#00c2e0' },
-  { name: 'Лаймовий', value: '#51e898' },
-  { name: 'Темно-синій', value: '#344563' },
-  { name: 'Сірий', value: '#838c91' },
-];
+// Preset colors for boards - use translation keys
+const COLOR_KEYS = ['blue', 'green', 'orange', 'red', 'purple', 'pink', 'lightBlue', 'lime', 'darkBlue', 'gray'];
+const COLOR_VALUES = ['#0079bf', '#61bd4f', '#ff9f1a', '#eb5a46', '#c377e0', '#ff78cb', '#00c2e0', '#51e898', '#344563', '#838c91'];
 
 export default function CreateBoardDialog({
   open,
@@ -72,9 +63,10 @@ export default function CreateBoardDialog({
   userId,
   onBoardCreated,
 }: CreateBoardDialogProps) {
+  const { t, i18n } = useTranslation();
   const [title, setTitle] = useState('');
   const [boardIdentifier, setBoardIdentifier] = useState('');
-  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].value);
+  const [selectedColor, setSelectedColor] = useState(COLOR_VALUES[0]);
   const [errors, setErrors] = useState<{ title?: string; boardIdentifier?: string }>({});
 
   const [createBoard, { loading }] = useMutation<CreateBoardData>(CREATE_BOARD_MUTATION);
@@ -93,7 +85,7 @@ export default function CreateBoardDialog({
   const handleClose = () => {
     setTitle('');
     setBoardIdentifier('');
-    setSelectedColor(PRESET_COLORS[0].value);
+    setSelectedColor(COLOR_VALUES[0]);
     setErrors({});
     onClose();
   };
@@ -102,20 +94,20 @@ export default function CreateBoardDialog({
     const newErrors: { title?: string; boardIdentifier?: string } = {};
 
     if (!title.trim()) {
-      newErrors.title = 'Назва проекту обов\'язкова';
+      newErrors.title = t('validation.titleRequired');
     } else if (title.trim().length < 3) {
-      newErrors.title = 'Назва має бути мінімум 3 символи';
+      newErrors.title = t('validation.titleMin3');
     } else if (title.length > 50) {
-      newErrors.title = 'Назва не може перевищувати 50 символів';
+      newErrors.title = t('validation.titleMax50');
     }
 
     if (boardIdentifier.trim()) {
       if (boardIdentifier.trim().length < 2) {
-        newErrors.boardIdentifier = 'Ідентифікатор має бути мінімум 2 символи';
+        newErrors.boardIdentifier = t('validation.identifierMin2');
       } else if (boardIdentifier.trim().length > 10) {
-        newErrors.boardIdentifier = 'Ідентифікатор не може перевищувати 10 символів';
+        newErrors.boardIdentifier = t('validation.identifierMax10');
       } else if (!/^[A-Za-z0-9-]+$/.test(boardIdentifier.trim())) {
-        newErrors.boardIdentifier = 'Ідентифікатор може містити лише літери, цифри та дефіс';
+        newErrors.boardIdentifier = t('validation.identifierFormat');
       }
     }
 
@@ -164,7 +156,7 @@ export default function CreateBoardDialog({
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box component="span" sx={{ fontSize: '1.25rem', fontWeight: 600 }}>
-          Створити новий проект
+          {t('createBoard.title')}
         </Box>
         <Button
           onClick={handleClose}
@@ -180,8 +172,8 @@ export default function CreateBoardDialog({
           <TextField
             autoFocus
             fullWidth
-            label="Назва проекту"
-            placeholder="Наприклад: Мій проект"
+            label={t('createBoard.projectName')}
+            placeholder={t('createBoard.projectNamePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={!!errors.title}
@@ -193,12 +185,12 @@ export default function CreateBoardDialog({
 
           <TextField
             fullWidth
-            label="Ідентифікатор проекту"
-            placeholder="Наприклад: PROJ або MY-APP"
+            label={t('createBoard.projectIdentifier')}
+            placeholder={t('createBoard.projectIdentifierPlaceholder')}
             value={boardIdentifier}
             onChange={(e) => setBoardIdentifier(e.target.value.toUpperCase())}
             error={!!errors.boardIdentifier}
-            helperText={errors.boardIdentifier || 'Необов\'язково. 2-10 символів (літери, цифри, дефіс). Використовується як префікс для карток.'}
+            helperText={errors.boardIdentifier || t('createBoard.identifierHelp')}
             margin="normal"
             disabled={loading}
             inputProps={{ maxLength: 10 }}
@@ -206,7 +198,7 @@ export default function CreateBoardDialog({
 
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Виберіть колір проекту:
+              {t('createBoard.chooseColor')}
             </Typography>
             <Box
               sx={{
@@ -216,18 +208,18 @@ export default function CreateBoardDialog({
                 mt: 2,
               }}
             >
-              {PRESET_COLORS.map((color) => (
+              {COLOR_VALUES.map((value, idx) => (
                 <Box
-                  key={color.value}
-                  onClick={() => !loading && setSelectedColor(color.value)}
+                  key={value}
+                  onClick={() => !loading && setSelectedColor(value)}
                   sx={{
                     width: '100%',
                     aspectRatio: '1',
-                    backgroundColor: color.value,
+                    backgroundColor: value,
                     borderRadius: 1,
                     cursor: loading ? 'not-allowed' : 'pointer',
-                    border: selectedColor === color.value ? '3px solid' : '2px solid transparent',
-                    borderColor: selectedColor === color.value ? 'primary.main' : 'transparent',
+                    border: selectedColor === value ? '3px solid' : '2px solid transparent',
+                    borderColor: selectedColor === value ? 'primary.main' : 'transparent',
                     transition: 'all 0.2s',
                     position: 'relative',
                     '&:hover': {
@@ -235,9 +227,9 @@ export default function CreateBoardDialog({
                       boxShadow: loading ? 0 : 2,
                     },
                   }}
-                  title={color.name}
+                  title={t(`colors.${COLOR_KEYS[idx]}`)}
                 >
-                  {selectedColor === color.value && (
+                  {selectedColor === value && (
                     <Box
                       sx={{
                         position: 'absolute',
@@ -259,7 +251,7 @@ export default function CreateBoardDialog({
           {/* Preview */}
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Попередній перегляд:
+              {t('createBoard.preview')}
             </Typography>
             <Box
               sx={{
@@ -272,15 +264,15 @@ export default function CreateBoardDialog({
               }}
             >
               <Typography variant="h6">
-                {title.trim() || 'Назва проекту'}
+                {title.trim() || t('createBoard.projectName')}
               </Typography>
               {boardIdentifier.trim() && (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Ідентифікатор: <strong>{boardIdentifier.trim()}</strong>
+                  {t('createBoard.identifier')}: <strong>{boardIdentifier.trim()}</strong>
                 </Typography>
               )}
               <Typography variant="caption" color="text.secondary">
-                Створено: {new Date().toLocaleDateString('uk-UA')}
+                {t('board.created')}: {new Date().toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
               </Typography>
             </Box>
           </Box>
@@ -288,7 +280,7 @@ export default function CreateBoardDialog({
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleClose} disabled={loading}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -296,11 +288,10 @@ export default function CreateBoardDialog({
             disabled={loading}
             startIcon={loading ? <CircularProgress size={16} /> : null}
           >
-            {loading ? 'Створення...' : 'Створити проект'}
+            {loading ? t('common.creating') : t('createBoard.createButton')}
           </Button>
         </DialogActions>
       </form>
     </Dialog>
   );
 }
-

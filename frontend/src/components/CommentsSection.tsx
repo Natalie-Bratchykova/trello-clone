@@ -12,6 +12,7 @@ import {
   Divider,
 } from '@mui/material';
 import { Send, Edit, Delete, Close, Check } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const GET_CARD_COMMENTS = gql`
   query GetCardComments($cardId: ID!) {
@@ -85,6 +86,7 @@ interface CommentsSectionProps {
 
 export default function CommentsSection({ cardId }: CommentsSectionProps) {
   const [newComment, setNewComment] = useState('');
+  const { t, i18n } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
@@ -154,7 +156,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        Коментарі {comments.length > 0 && `(${comments.length})`}
+        {t('comments.title')} {comments.length > 0 && `(${comments.length})`}
       </Typography>
 
       {/* New comment input */}
@@ -170,7 +172,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
             multiline
             minRows={2}
             maxRows={6}
-            placeholder="Написати коментар..."
+            placeholder={t('comments.placeholder')}
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) => {
@@ -183,7 +185,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
             <Typography variant="caption" color="text.secondary">
-              Ctrl + Enter для надсилання
+              {t('comments.ctrlEnter')}
             </Typography>
             <Button
               variant="contained"
@@ -192,7 +194,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
               onClick={handleSubmit}
               disabled={!newComment.trim() || creating}
             >
-              Надіслати
+              {t('comments.send')}
             </Button>
           </Box>
         </Box>
@@ -207,7 +209,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
       {/* Comments list */}
       {comments.length === 0 && !loading && (
         <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic', textAlign: 'center', py: 2 }}>
-          Коментарів поки немає
+          {t('comments.noComments')}
         </Typography>
       )}
 
@@ -227,11 +229,11 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
                   {comment.user.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {formatRelativeTime(comment.createdAt)}
+                  {formatRelativeTime(comment.createdAt, t, i18n.language)}
                 </Typography>
                 {comment.createdAt !== comment.updatedAt && (
                   <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    (змінено)
+                    {t('comments.edited')}
                   </Typography>
                 )}
               </Box>
@@ -311,7 +313,7 @@ export default function CommentsSection({ cardId }: CommentsSectionProps) {
   );
 }
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: any, lang: string): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
@@ -319,11 +321,12 @@ function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 1) return 'щойно';
-  if (diffMin < 60) return `${diffMin} хв. тому`;
-  if (diffHours < 24) return `${diffHours} год. тому`;
-  if (diffDays < 7) return `${diffDays} дн. тому`;
-  return date.toLocaleDateString('uk-UA', {
+  if (diffMin < 1) return t('comments.justNow');
+  if (diffMin < 60) return t('comments.minutesAgo', { count: diffMin });
+  if (diffHours < 24) return t('comments.hoursAgo', { count: diffHours });
+  if (diffDays < 7) return t('comments.daysAgo', { count: diffDays });
+  const locale = lang === 'uk' ? 'uk-UA' : lang === 'ja' ? 'ja-JP' : 'en-US';
+  return date.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,

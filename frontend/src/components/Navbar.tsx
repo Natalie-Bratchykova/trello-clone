@@ -2,7 +2,9 @@ import { AppBar, Toolbar, Typography, Button, Box, Avatar, IconButton, Menu, Men
 import { Dashboard, AccountCircle, Login, Logout } from '@mui/icons-material';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
- import { useUserData } from '../hooks/useUserData.ts';
+import { useTranslation } from 'react-i18next';
+import { useUserData } from '../hooks/useUserData.ts';
+import LanguageSwitcher from './LanguageSwitcher';
 interface NavbarProps {
   isAuthenticated: boolean;
   user?: {
@@ -15,6 +17,7 @@ interface NavbarProps {
 
 export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
 
@@ -64,7 +67,7 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
             to="/projects"
             startIcon={<Dashboard />}
           >
-            Проекти
+            {t('navbar.projects')}
           </Button>
         )}
 
@@ -107,7 +110,7 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
                 </Typography>
               </MenuItem>
               <MenuItem onClick={handleClose} component={Link} to="/profile">
-                <AccountCircle sx={{ mr: 1 }} /> Профіль
+                <AccountCircle sx={{ mr: 1 }} /> {t('navbar.profile')}
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -116,18 +119,22 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
                   navigate('/login');
                 }}
               >
-                <Logout sx={{ mr: 1 }} /> Вийти
+                <Logout sx={{ mr: 1 }} /> {t('navbar.logout')}
               </MenuItem>
             </Menu>
+            <LanguageSwitcher />
           </Box>
         ) : (
-          <Button
-            color="inherit"
-            startIcon={<Login />}
-            onClick={handleLoginClick}
-          >
-            Увійти
-          </Button>
+          <>
+            <Button
+              color="inherit"
+              startIcon={<Login />}
+              onClick={handleLoginClick}
+            >
+              {t('navbar.login')}
+            </Button>
+            <LanguageSwitcher />
+          </>
         )}
       </Toolbar>
     </AppBar>

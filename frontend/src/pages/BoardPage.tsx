@@ -52,6 +52,7 @@ import TicketDetailDialog from '../components/TicketDetailDialog';
 import { GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET, DELETE_ALL_LISTS_EXCEPT_BACKLOG, BULK_DELETE_ALL_CARDS_BY_BOARD, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
 import BoardColumn from '../components/BoardColumn.tsx';
 import { gql } from '@apollo/client';
+import { useTranslation } from 'react-i18next';
 
 interface Card {
   id: string;
@@ -105,9 +106,9 @@ interface Board {
 }
 
 const PRIORITY_OPTIONS = [
-  { value: 'LOW', label: 'Низький', icon: '🟢', color: '#4caf50' },
-  { value: 'MEDIUM', label: 'Середній', icon: '🟠', color: '#ff9800' },
-  { value: 'HIGH', label: 'Високий', icon: '🔴', color: '#f44336' },
+  { value: 'LOW', labelKey: 'priority.low', icon: '🟢', color: '#4caf50' },
+  { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠', color: '#ff9800' },
+  { value: 'HIGH', labelKey: 'priority.high', icon: '🔴', color: '#f44336' },
 ];
 
 type PrioritySortMode = 'low-medium-high' | 'high-medium-low' | 'medium-high-low';
@@ -129,16 +130,17 @@ const PRIORITY_SORT_MODES: PrioritySortMode[] = ['low-medium-high', 'high-medium
 type SortField = 'none' | 'priority' | 'createdAt' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
 
-const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: 'none', label: 'Без сортування' },
-  { value: 'priority', label: 'За пріоритетом' },
-  { value: 'createdAt', label: 'За датою створення' },
-  { value: 'dueDate', label: 'За дедлайном' },
+const SORT_OPTIONS: { value: SortField; labelKey: string }[] = [
+  { value: 'none', labelKey: 'sort.none' },
+  { value: 'priority', labelKey: 'sort.byPriority' },
+  { value: 'createdAt', labelKey: 'sort.byCreatedAt' },
+  { value: 'dueDate', labelKey: 'sort.byDueDate' },
 ];
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [cardDialogState, setCardDialogState] = useState<{
@@ -586,9 +588,9 @@ export default function BoardPage() {
   if (error || !board) {
     return (
       <Container sx={{ mt: 4 }}>
-        <Alert severity="error">{error ? `Помилка: ${error.message}` : 'Дошку не знайдено'}</Alert>
+        <Alert severity="error">{error ? `${t('common.error')}: ${error.message}` : t('board.boardNotFound')}</Alert>
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
-          Повернутись до проектів
+          {t('board.backToProjects')}
         </Button>
       </Container>
     );
@@ -606,13 +608,13 @@ export default function BoardPage() {
             <Typography variant="h5" sx={{ fontWeight: 600, flex: 1 }}>
               {board.title}
             </Typography>
-            <IconButton onClick={() => navigate(`/board/${id}/edit`)} sx={{ color: 'white' }} title="Налаштування проекту">
+            <IconButton onClick={() => navigate(`/board/${id}/edit`)} sx={{ color: 'white' }} title={t('board.projectSettings')}>
               <Settings />
             </IconButton>
             <IconButton
               onClick={(e) => setDangerMenuAnchor(e.currentTarget)}
               sx={{ color: 'white' }}
-              title="Небезпечні дії"
+              title={t('board.dangerActions')}
             >
               <DeleteSweep />
             </IconButton>
@@ -627,7 +629,7 @@ export default function BoardPage() {
                   sx={{ color: 'error.main' }}
                 >
                   <ListItemIcon><DeleteSweep fontSize="small" color="error" /></ListItemIcon>
-                  <ListItemText>Видалити всі списки (крім Backlog)</ListItemText>
+                  <ListItemText>{t('danger.deleteAllLists')}</ListItemText>
                 </MenuItem>
               )}
               {totalCardCount > 0 && (
@@ -636,7 +638,7 @@ export default function BoardPage() {
                   sx={{ color: 'error.main' }}
                 >
                   <ListItemIcon><DeleteForever fontSize="small" color="error" /></ListItemIcon>
-                  <ListItemText>Видалити всі тікети ({totalCardCount})</ListItemText>
+                  <ListItemText>{t('danger.deleteAllTickets', { count: totalCardCount })}</ListItemText>
                 </MenuItem>
               )}
               {totalCardCount > 0 && (
@@ -648,12 +650,12 @@ export default function BoardPage() {
                   }}
                 >
                   <ListItemIcon><Flag fontSize="small" color="error" /></ListItemIcon>
-                  <ListItemText>Видалити за пріоритетом</ListItemText>
+                  <ListItemText>{t('danger.deleteByPriority')}</ListItemText>
                 </MenuItem>
               )}
               {board.lists.filter((l) => l.position !== 0).length === 0 && totalCardCount === 0 && (
                 <MenuItem disabled>
-                  <ListItemText>Немає доступних дій</ListItemText>
+                  <ListItemText>{t('common.noActions')}</ListItemText>
                 </MenuItem>
               )}
             </Menu>
@@ -664,7 +666,7 @@ export default function BoardPage() {
               onClose={() => setBoardPrioritySubmenuAnchor(null)}
             >
               <Typography variant="caption" sx={{ px: 2, py: 0.5, fontWeight: 600, color: 'text.secondary' }}>
-                Оберіть пріоритети для видалення:
+                {t('danger.selectPrioritiesForDeletion')}
               </Typography>
               {PRIORITY_OPTIONS.map((opt) => {
                 const count = board.lists.reduce(
@@ -674,7 +676,7 @@ export default function BoardPage() {
                 return (
                   <MenuItem key={opt.value} onClick={() => toggleBoardPriority(opt.value)} dense>
                     <Checkbox size="small" checked={selectedBoardPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
-                    <ListItemText primary={`${opt.icon} ${opt.label} (${count})`} />
+                    <ListItemText primary={`${opt.icon} ${t(opt.labelKey)} (${count})`} />
                   </MenuItem>
                 );
               })}
@@ -691,7 +693,7 @@ export default function BoardPage() {
                     setDeletePriorityBoardOpen(true);
                   }}
                 >
-                  Видалити ({boardPriorityMatchCount})
+                  {t('common.delete')} ({boardPriorityMatchCount})
                 </Button>
               </Box>
             </Menu>
@@ -719,7 +721,7 @@ export default function BoardPage() {
               variant="subtitle2"
               sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, fontSize: '0.7rem' }}
             >
-              Фільтри
+              {t('filters.title')}
             </Typography>
             <MuiList disablePadding>
               <ListItem disablePadding>
@@ -731,7 +733,7 @@ export default function BoardPage() {
                   <ListItemIcon sx={{ minWidth: 32 }}>
                     <ViewColumn sx={{ fontSize: 18 }} />
                   </ListItemIcon>
-                  <ListItemText primary="Всі задачі" primaryTypographyProps={{ variant: 'body2', fontWeight: !showOnlyMine ? 600 : 400 }} />
+                  <ListItemText primary={t('filters.allTasks')} primaryTypographyProps={{ variant: 'body2', fontWeight: !showOnlyMine ? 600 : 400 }} />
                   <Chip label={totalCardCount} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
                 </ListItemButton>
               </ListItem>
@@ -744,7 +746,7 @@ export default function BoardPage() {
                   <ListItemIcon sx={{ minWidth: 32 }}>
                     <FolderSpecial sx={{ fontSize: 18 }} />
                   </ListItemIcon>
-                  <ListItemText primary="Мої задачі" primaryTypographyProps={{ variant: 'body2', fontWeight: showOnlyMine ? 600 : 400 }} />
+                  <ListItemText primary={t('filters.myTasks')} primaryTypographyProps={{ variant: 'body2', fontWeight: showOnlyMine ? 600 : 400 }} />
                   <Chip label={myCardCount} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
                 </ListItemButton>
               </ListItem>
@@ -760,12 +762,12 @@ export default function BoardPage() {
                 variant="subtitle2"
                 sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, fontSize: '0.7rem' }}
               >
-                Активні фільтри
+                {t('filters.activeFilters')}
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {showOnlyMine && (
                   <Chip
-                    label="Мої задачі"
+                    label={t('filters.myTasks')}
                     size="small"
                     onDelete={() => setShowOnlyMine(false)}
                     icon={<PersonOutline sx={{ fontSize: 14 }} />}
@@ -797,7 +799,7 @@ export default function BoardPage() {
                 })}
                 {sortBy !== 'none' && (
                   <Chip
-                    label={`${SORT_OPTIONS.find((o) => o.value === sortBy)?.label} ${sortDirection === 'asc' ? '↑' : '↓'}`}
+                    label={`${SORT_OPTIONS.find((o) => o.value === sortBy)?.labelKey ? t(SORT_OPTIONS.find((o) => o.value === sortBy)!.labelKey) : ''} ${sortDirection === 'asc' ? '↑' : '↓'}`}
                     size="small"
                     icon={<SwapVert sx={{ fontSize: 14 }} />}
                     onDelete={() => setSortBy('none')}
@@ -806,7 +808,7 @@ export default function BoardPage() {
                 )}
               </Box>
               <Button size="small" onClick={clearFilters} sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem' }}>
-                Очистити все
+                {t('common.clearAll')}
               </Button>
             </Box>
           )}
@@ -817,7 +819,7 @@ export default function BoardPage() {
               <Divider />
               <Box sx={{ p: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Показано: <strong>{filteredCardCount}</strong> з {totalCardCount} задач
+                  {t('filters.shown')}: <strong>{filteredCardCount}</strong> {t('filters.of')} {totalCardCount} {t('filters.tasks')}
                 </Typography>
               </Box>
             </>
@@ -830,7 +832,7 @@ export default function BoardPage() {
           <Box sx={{ px: 3, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.paper' }}>
             <TextField
               size="small"
-              placeholder="Пошук задач..."
+              placeholder={t('filters.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ minWidth: 200, flex: { xs: 1, sm: 'unset' } }}
@@ -858,7 +860,7 @@ export default function BoardPage() {
               onClick={(e) => setUserMenuAnchor(e.currentTarget)}
               sx={{ textTransform: 'none', fontSize: '0.8rem' }}
             >
-              Виконавці
+              {t('filters.assignees')}
             </Button>
             <Menu
               anchorEl={userMenuAnchor}
@@ -869,7 +871,7 @@ export default function BoardPage() {
               {allBoardUsers.length === 0 ? (
                 <MenuItem disabled>
                   <Typography variant="body2" color="text.secondary">
-                    Немає виконавців
+                    {t('filters.noAssignees')}
                   </Typography>
                 </MenuItem>
               ) : (
@@ -901,14 +903,14 @@ export default function BoardPage() {
               onClick={(e) => setPriorityMenuAnchor(e.currentTarget)}
               sx={{ textTransform: 'none', fontSize: '0.8rem' }}
             >
-              Пріоритет
+              {t('filters.priorityFilter')}
             </Button>
             <Menu anchorEl={priorityMenuAnchor} open={Boolean(priorityMenuAnchor)} onClose={() => setPriorityMenuAnchor(null)}>
               {PRIORITY_OPTIONS.map((opt) => (
                 <MenuItem key={opt.value} onClick={() => togglePriority(opt.value)} dense>
                   <Checkbox size="small" checked={selectedPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: opt.color, mr: 1 }} />
-                  <ListItemText primary={`${opt.icon} ${opt.label}`} primaryTypographyProps={{ variant: 'body2' }} />
+                  <ListItemText primary={`${opt.icon} ${t(opt.labelKey)}`} primaryTypographyProps={{ variant: 'body2' }} />
                 </MenuItem>
               ))}
             </Menu>
@@ -928,10 +930,10 @@ export default function BoardPage() {
               sx={{ textTransform: 'none', fontSize: '0.8rem' }}
             >
               {sortBy === 'priority'
-                ? `Пріоритет: ${PRIORITY_SORT_LABELS[prioritySortMode]}`
+                ? `${t('filters.priorityFilter')}: ${PRIORITY_SORT_LABELS[prioritySortMode]}`
                 : sortBy !== 'none'
-                  ? SORT_OPTIONS.find((o) => o.value === sortBy)?.label
-                  : 'Сортування'}
+                  ? t(SORT_OPTIONS.find((o) => o.value === sortBy)?.labelKey || '')
+                  : t('sort.title')}
             </Button>
             <Menu anchorEl={sortMenuAnchor} open={Boolean(sortMenuAnchor)} onClose={() => setSortMenuAnchor(null)}>
               {SORT_OPTIONS.map((opt) => (
@@ -956,7 +958,7 @@ export default function BoardPage() {
                   }}
                   dense
                 >
-                  <ListItemText primary={opt.label} primaryTypographyProps={{ variant: 'body2' }} />
+                  <ListItemText primary={t(opt.labelKey)} primaryTypographyProps={{ variant: 'body2' }} />
                   {sortBy === opt.value && opt.value !== 'none' && opt.value !== 'priority' && (
                     <Box sx={{ ml: 1 }}>
                       {sortDirection === 'asc' ? <ArrowUpward sx={{ fontSize: 16, color: 'primary.main' }} /> : <ArrowDownward sx={{ fontSize: 16, color: 'primary.main' }} />}
@@ -968,7 +970,7 @@ export default function BoardPage() {
                 <>
                   <Divider sx={{ my: 0.5 }} />
                   <Typography variant="caption" sx={{ px: 2, py: 0.5, color: 'text.secondary', fontWeight: 600 }}>
-                    Порядок пріоритетів
+                    {t('sort.priorityOrder')}
                   </Typography>
                   {PRIORITY_SORT_MODES.map((mode) => (
                     <MenuItem
@@ -1043,7 +1045,7 @@ export default function BoardPage() {
                     <TextField
                       fullWidth
                       size="small"
-                      placeholder="Введіть назву списку..."
+                      placeholder={t('board.enterListName')}
                       value={newListTitle}
                       onChange={(e) => setNewListTitle(e.target.value)}
                       onKeyDown={(e) => {
@@ -1054,7 +1056,7 @@ export default function BoardPage() {
                     />
                     <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                       <Button variant="contained" size="small" onClick={handleCreateList} disabled={createListLoading || !newListTitle.trim()}>
-                        Додати
+                        {t('common.add')}
                       </Button>
                       <Button
                         size="small"
@@ -1064,13 +1066,13 @@ export default function BoardPage() {
                         }}
                         disabled={createListLoading}
                       >
-                        Скасувати
+                        {t('common.cancel')}
                       </Button>
                     </Box>
                   </Box>
                 ) : (
                   <Button fullWidth startIcon={<Add />} onClick={() => setIsAddingList(true)} sx={{ justifyContent: 'flex-start' }}>
-                    Додати список
+                    {t('board.addList')}
                   </Button>
                 )}
               </Paper>
@@ -1108,11 +1110,11 @@ export default function BoardPage() {
       <Dialog open={deleteAllConfirmOpen} onClose={() => setDeleteAllConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Warning color="error" />
-          Видалити всі списки?
+          {t('danger.deleteAllListsTitle')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Ви дійсно хочете видалити <strong>всі списки</strong> (крім Backlog)?
+            {t('danger.deleteAllListsConfirm')}
           </DialogContentText>
           {(() => {
             const nonBacklogLists = board?.lists.filter((l) => l.position !== 0) ?? [];
@@ -1121,13 +1123,13 @@ export default function BoardPage() {
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Box sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
                   <Typography variant="body2" fontWeight={600}>
-                    🗑️ Буде видалено {nonBacklogLists.length} {nonBacklogLists.length === 1 ? 'список' : 'списків'}:
+                    {t('danger.willDeleteLists', { count: nonBacklogLists.length })}
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
                     {nonBacklogLists.map((l) => (
                       <li key={l.id}>
                         <Typography variant="body2">
-                          {l.title} ({l.cards.length} {l.cards.length === 1 ? 'картка' : 'карток'})
+                          {l.title} ({l.cards.length})
                         </Typography>
                       </li>
                     ))}
@@ -1136,7 +1138,7 @@ export default function BoardPage() {
                 {totalCards > 0 && (
                   <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, color: 'warning.dark' }}>
                     <Typography variant="body2">
-                      📋 Усі {totalCards} карток будуть переміщені до колонки <strong>Backlog</strong>.
+                      {t('danger.cardsWillMove', { count: totalCards })} <strong>Backlog</strong>.
                     </Typography>
                   </Box>
                 )}
@@ -1146,10 +1148,10 @@ export default function BoardPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteAllConfirmOpen(false)} disabled={deletingAllLists}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleDeleteAllLists} variant="contained" color="error" disabled={deletingAllLists}>
-            {deletingAllLists ? 'Видалення...' : 'Так, видалити всі'}
+            {deletingAllLists ? t('common.deleting') : t('deleteConfirm.yesDelete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1158,38 +1160,38 @@ export default function BoardPage() {
       <Dialog open={deleteAllTicketsBoardOpen} onClose={() => setDeleteAllTicketsBoardOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Warning color="error" />
-          Видалити всі тікети?
+          {t('danger.deleteAllTicketsTitle')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Ви дійсно хочете <strong>назавжди видалити</strong> всі тікети на цій дошці?
+            {t('danger.deleteAllTicketsConfirm')}
           </DialogContentText>
           <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
             <Typography variant="body2" fontWeight={600}>
-              🗑️ Буде видалено {totalCardCount} {totalCardCount === 1 ? 'тікет' : 'тікетів'} разом з усіма коментарями.
+              {t('danger.willDeleteTickets', { count: totalCardCount })}
             </Typography>
             {board && (
               <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.5 }}>
                 {board.lists.filter((l) => l.cards.length > 0).map((l) => (
                   <li key={l.id}>
                     <Typography variant="body2">
-                      {l.title}: {l.cards.length} тікетів
+                      {l.title}: {l.cards.length}
                     </Typography>
                   </li>
                 ))}
               </Box>
             )}
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Цю дію не можна скасувати!
+              {t('column.cannotUndo')}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteAllTicketsBoardOpen(false)} disabled={deletingAllTicketsBoard}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleDeleteAllTicketsBoard} variant="contained" color="error" disabled={deletingAllTicketsBoard}>
-            {deletingAllTicketsBoard ? 'Видалення...' : `Так, видалити всі (${totalCardCount})`}
+            {deletingAllTicketsBoard ? t('common.deleting') : `${t('deleteConfirm.yesDelete')} (${totalCardCount})`}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1198,15 +1200,15 @@ export default function BoardPage() {
       <Dialog open={deletePriorityBoardOpen} onClose={() => setDeletePriorityBoardOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Warning color="error" />
-          Видалити за пріоритетом?
+          {t('danger.deleteByPriorityTitle')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Ви дійсно хочете <strong>назавжди видалити</strong> тікети з обраними пріоритетами на всій дошці?
+            {t('danger.deleteByPriorityConfirm')}
           </DialogContentText>
           <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
             <Typography variant="body2" fontWeight={600}>
-              🗑️ Буде видалено {boardPriorityMatchCount} {boardPriorityMatchCount === 1 ? 'тікет' : 'тікетів'}:
+              {t('danger.willDeleteByPriority', { count: boardPriorityMatchCount })}
             </Typography>
             <Box sx={{ mt: 0.5 }}>
               {selectedBoardPriorities.map((p) => {
@@ -1216,22 +1218,22 @@ export default function BoardPage() {
                   : 0;
                 return (
                   <Typography key={p} variant="body2">
-                    {opt?.icon} {opt?.label}: {count} тікетів
+                    {opt?.icon} {opt ? t(opt.labelKey) : ''}: {count}
                   </Typography>
                 );
               })}
             </Box>
             <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Цю дію не можна скасувати!
+              {t('column.cannotUndo')}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeletePriorityBoardOpen(false)} disabled={deletingPriorityBoard}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleDeleteByPriorityBoard} variant="contained" color="error" disabled={deletingPriorityBoard}>
-            {deletingPriorityBoard ? 'Видалення...' : `Так, видалити (${boardPriorityMatchCount})`}
+            {deletingPriorityBoard ? t('common.deleting') : `${t('deleteConfirm.yesDelete')} (${boardPriorityMatchCount})`}
           </Button>
         </DialogActions>
       </Dialog>

@@ -7,9 +7,11 @@ import {
 } from '@mui/material';
 import { Login, Dashboard } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function EmptyState() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLoginClick = () => {
     navigate('/login');
@@ -37,12 +39,11 @@ export default function EmptyState() {
         />
 
         <Typography variant="h4" gutterBottom>
-          Ласкаво просимо до TaskBoard!
+          {t('emptyState.welcome')}
         </Typography>
 
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Увійдіть у свій акаунт, щоб переглянути та керувати своїми проектами.
-          Створюйте дошки, списки завдань та відстежуйте прогрес вашої команди.
+          {t('emptyState.description')}
         </Typography>
 
         <Button
@@ -52,16 +53,15 @@ export default function EmptyState() {
           onClick={handleLoginClick}
           sx={{ minWidth: 200 }}
         >
-          Увійти
+          {t('emptyState.loginButton')}
         </Button>
 
         <Box sx={{ mt: 4 }}>
           <Typography variant="caption" color="text.secondary">
-            Не маєте акаунту? Зареєструйтеся зараз!
+            {t('emptyState.noAccount')}
           </Typography>
         </Box>
       </Paper>
     </Container>
   );
 }
-

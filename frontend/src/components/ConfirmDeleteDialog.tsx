@@ -9,6 +9,7 @@ import {
   Box,
 } from '@mui/material';
 import { Warning } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmDeleteDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ export default function ConfirmDeleteDialog({
   boardTitle,
   loading = false,
 }: ConfirmDeleteDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog
       open={open}
@@ -38,12 +41,12 @@ export default function ConfirmDeleteDialog({
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Warning color="error" />
         <Box component="span" sx={{ fontSize: '1.25rem', fontWeight: 600 }}>
-          Видалити проект?
+          {t('deleteConfirm.deleteProject')}
         </Box>
       </DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Ви дійсно хочете видалити проект <strong>"{boardTitle}"</strong>?
+          {t('deleteConfirm.deleteProjectConfirm')} <strong>"{boardTitle}"</strong>?
         </DialogContentText>
         <Box
           sx={{
@@ -55,13 +58,13 @@ export default function ConfirmDeleteDialog({
           }}
         >
           <Typography variant="body2">
-            ⚠️ Це також видалить всі списки та картки в цьому проекті. Цю дію не можна скасувати.
+            {t('deleteConfirm.deleteProjectWarning')}
           </Typography>
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={loading}>
-          Скасувати
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={onConfirm}
@@ -69,10 +72,9 @@ export default function ConfirmDeleteDialog({
           color="error"
           disabled={loading}
         >
-          {loading ? 'Видалення...' : 'Так, видалити'}
+          {loading ? t('common.deleting') : t('deleteConfirm.yesDelete')}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
-

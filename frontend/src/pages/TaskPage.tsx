@@ -28,6 +28,7 @@ import {
 import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, Dashboard, Edit, Delete, Warning, PersonAdd } from '@mui/icons-material';
 import CommentsSection from "../components/CommentsSection.tsx";
 import EditCardDialog from "../components/EditCardDialog.tsx";
+import { useTranslation } from 'react-i18next';
 
 const GET_CARD = gql`
   query GetCard($id: ID!) {
@@ -128,10 +129,10 @@ const ASSIGN_USER_MUTATION = gql`
   }
 `;
 
-const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  LOW: { label: 'Низький', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
-  MEDIUM: { label: 'Середній', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
-  HIGH: { label: 'Високий', color: '#c62828', bg: '#ffebee', icon: '🔴' },
+const PRIORITY_CONFIG: Record<string, { labelKey: string; color: string; bg: string; icon: string }> = {
+  LOW: { labelKey: 'priority.low', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
+  MEDIUM: { labelKey: 'priority.medium', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
+  HIGH: { labelKey: 'priority.high', color: '#c62828', bg: '#ffebee', icon: '🔴' },
 };
 
 function getDueDateColors(dueDate: string): { bg: string; color: string } {
@@ -147,18 +148,18 @@ function getDueDateColors(dueDate: string): { bg: string; color: string } {
   return { bg: '#e8f5e9', color: '#2e7d32' };
 }
 
-function getDueDateLabel(dueDate: string): string {
+function getDueDateLabel(dueDate: string, t: any): string {
   const now = new Date();
   const due = new Date(dueDate);
   const diffMs = due.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return `Прострочено на ${Math.abs(diffDays)} дн.`;
-  if (diffDays === 0) return 'Сьогодні';
-  if (diffDays === 1) return 'Завтра';
-  if (diffDays < 7) return `Через ${diffDays} дн.`;
-  if (diffDays < 30) return `Через ${Math.floor(diffDays / 7)} тижн.`;
-  return `Через ${Math.floor(diffDays / 30)} міс.`;
+  if (diffDays < 0) return t('dueDate.overdue', { days: Math.abs(diffDays) });
+  if (diffDays === 0) return t('dueDate.today');
+  if (diffDays === 1) return t('dueDate.tomorrow');
+  if (diffDays < 7) return t('dueDate.inDays', { days: diffDays });
+  if (diffDays < 30) return t('dueDate.inWeeks', { weeks: Math.floor(diffDays / 7) });
+  return t('dueDate.inMonths', { months: Math.floor(diffDays / 30) });
 }
 
 interface CardData {
@@ -213,6 +214,7 @@ export default function TaskPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const client = useApolloClient();
+  const { t, i18n } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -326,10 +328,10 @@ export default function TaskPage() {
     return (
       <Container sx={{ mt: 4 }}>
         <Alert severity="error">
-          {error ? `Помилка: ${error.message}` : 'Задачу не знайдено'}
+          {error ? `${t('common.error')}: ${error.message}` : t('task.taskNotFound')}
         </Alert>
         <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mt: 2 }}>
-          Повернутись назад
+          {t('task.backToBoard')}
         </Button>
       </Container>
     );
@@ -372,7 +374,7 @@ export default function TaskPage() {
                 },
               }}
             >
-              Редагувати
+              {t('common.edit')}
             </Button>
             <Button
               variant="outlined"
@@ -388,7 +390,7 @@ export default function TaskPage() {
                 },
               }}
             >
-              Видалити
+              {t('common.delete')}
             </Button>
           </Box>
         </Container>
@@ -398,7 +400,7 @@ export default function TaskPage() {
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
           <Link component={RouterLink} to="/projects" underline="hover" color="inherit">
-            Проекти
+            {t('navbar.projects')}
           </Link>
           {card.list?.board && (
             <Link component={RouterLink} to={`/board/${card.list.board.id}`} underline="hover" color="inherit">
@@ -419,7 +421,7 @@ export default function TaskPage() {
             {/* Description */}
             <Paper sx={{ p: 3, mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Опис
+                {t('ticketDetail.description')}
               </Typography>
               {card.description ? (
                 <Box
@@ -452,7 +454,7 @@ export default function TaskPage() {
                 />
               ) : (
                 <Typography variant="body1" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                  Опис відсутній
+                  {t('ticketDetail.noDescription')}
                 </Typography>
               )}
             </Paper>
@@ -461,7 +463,7 @@ export default function TaskPage() {
             {card.parent && (
               <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
-                  Батьківська задача
+                  {t('parentTask.title')}
                 </Typography>
                 <Box
                   component={RouterLink}
@@ -493,7 +495,7 @@ export default function TaskPage() {
             {card.children && card.children.length > 0 && (
               <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
-                  Підзадачі ({card.children.length})
+                  {t('ticketDetail.subtasks', { count: card.children.length })}
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {card.children.map((child) => (
@@ -549,7 +551,7 @@ export default function TaskPage() {
             <Paper sx={{ p: 3 }}>
               {/* Status / List */}
               {card.list && (
-                <SidebarField icon={<ListIcon sx={{ fontSize: 18 }} />} label="Список">
+                <SidebarField icon={<ListIcon sx={{ fontSize: 18 }} />} label={t('task.list')}>
                   {boardLists.length > 0 ? (
                     <FormControl size="small" fullWidth>
                       <Select
@@ -577,7 +579,7 @@ export default function TaskPage() {
 
               {/* Board */}
               {card.list?.board && (
-                <SidebarField icon={<Dashboard sx={{ fontSize: 18 }} />} label="Проект">
+                <SidebarField icon={<Dashboard sx={{ fontSize: 18 }} />} label={t('task.project')}>
                   <Chip
                     label={card.list.board.title}
                     size="small"
@@ -593,9 +595,9 @@ export default function TaskPage() {
 
               {/* Priority */}
               {priorityConfig && (
-                <SidebarField icon={<Flag sx={{ fontSize: 18 }} />} label="Пріоритет">
+                <SidebarField icon={<Flag sx={{ fontSize: 18 }} />} label={t('priority.label')}>
                   <Chip
-                    label={`${priorityConfig.icon} ${priorityConfig.label}`}
+                    label={`${priorityConfig.icon} ${t(priorityConfig.labelKey)}`}
                     size="small"
                     sx={{
                       backgroundColor: priorityConfig.bg,
@@ -610,10 +612,10 @@ export default function TaskPage() {
               {card.dueDate && (() => {
                 const dueDateColors = getDueDateColors(card.dueDate!);
                 return (
-                  <SidebarField icon={<CalendarToday sx={{ fontSize: 18 }} />} label="Дедлайн">
+                  <SidebarField icon={<CalendarToday sx={{ fontSize: 18 }} />} label={t('dueDate.deadline')}>
                     <Box>
                       <Chip
-                        label={new Date(card.dueDate!).toLocaleDateString('uk-UA', {
+                        label={new Date(card.dueDate!).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
@@ -626,7 +628,7 @@ export default function TaskPage() {
                         }}
                       />
                       <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {getDueDateLabel(card.dueDate!)}
+                        {getDueDateLabel(card.dueDate!, t)}
                       </Typography>
                     </Box>
                   </SidebarField>
@@ -637,7 +639,7 @@ export default function TaskPage() {
               {card.user && (
                 <>
                   <Divider sx={{ my: 2 }} />
-                  <SidebarField icon={<Person sx={{ fontSize: 18 }} />} label="Виконавець">
+                  <SidebarField icon={<Person sx={{ fontSize: 18 }} />} label={t('filters.assignees')}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar
                         src={card.user.profileImage ? `http://localhost:3000${card.user.profileImage}` : undefined}
@@ -671,16 +673,16 @@ export default function TaskPage() {
                   fullWidth
                   sx={{ textTransform: 'none', mb: 2 }}
                 >
-                  {assigningUser ? 'Призначення...' : 'Призначити на мене'}
+                  {assigningUser ? t('assignee.assigning') : t('assignee.assignMe')}
                 </Button>
               )}
 
               <Divider sx={{ my: 2 }} />
 
               {/* Timestamps */}
-              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Створено">
+              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.createdAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.createdAt).toLocaleDateString('uk-UA', {
+                  {new Date(card.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -689,9 +691,9 @@ export default function TaskPage() {
                   })}
                 </Typography>
               </SidebarField>
-              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label="Оновлено">
+              <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.updatedAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.updatedAt).toLocaleDateString('uk-UA', {
+                  {new Date(card.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -729,24 +731,24 @@ export default function TaskPage() {
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Warning color="error" />
-          Видалити задачу?
+          {t('deleteConfirm.deleteTask')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Ви дійсно хочете видалити задачу <strong>"{card.title}"</strong>?
+            {t('deleteConfirm.deleteTaskConfirm')} <strong>"{card.title}"</strong>?
           </DialogContentText>
           <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
             <Typography variant="body2">
-              ⚠️ Це також видалить всі коментарі цієї задачі. Підзадачі будуть від'єднані. Цю дію не можна скасувати.
+              {t('deleteConfirm.deleteTaskWarningFull')}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deletingCard}>
-            Скасувати
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleDelete} variant="contained" color="error" disabled={deletingCard}>
-            {deletingCard ? 'Видалення...' : 'Так, видалити'}
+            {deletingCard ? t('common.deleting') : t('deleteConfirm.yesDelete')}
           </Button>
         </DialogActions>
       </Dialog>

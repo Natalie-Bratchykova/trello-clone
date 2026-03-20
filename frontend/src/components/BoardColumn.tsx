@@ -25,6 +25,7 @@ import TicketCard from './TicketCard.tsx';
 import { useDrop } from 'react-dnd';
 import { ItemTypes } from '../helpers/types/ItemTypes.ts';
 import { BULK_DELETE_CARDS_BY_LIST, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
+import { useTranslation } from 'react-i18next';
 
 const UPDATE_LIST_MUTATION = gql`
   mutation UpdateListTitle($id: ID!, $data: UpdateListInput!) {
@@ -42,9 +43,9 @@ const DELETE_LIST_MUTATION = gql`
 `;
 
 const PRIORITY_OPTIONS = [
-    { value: 'LOW', label: 'Низький', icon: '🟢' },
-    { value: 'MEDIUM', label: 'Середній', icon: '🟠' },
-    { value: 'HIGH', label: 'Високий', icon: '🔴' },
+    { value: 'LOW', labelKey: 'priority.low', icon: '🟢' },
+    { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠' },
+    { value: 'HIGH', labelKey: 'priority.high', icon: '🔴' },
 ];
 
 export interface BoardColumnProps {
@@ -76,6 +77,7 @@ export interface BoardColumnProps {
 }
 
 export default function BoardColumn({ list, setCardDialogState, lastDroppedCardId, onDrop, onCardClick, onListUpdated, externalSortActive, isBacklog, onClearList }: BoardColumnProps) {
+    const { t } = useTranslation();
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(list.title);
@@ -329,14 +331,14 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                     <ListItemIcon>
                         <Edit fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Перейменувати</ListItemText>
+                    <ListItemText>{t('column.rename')}</ListItemText>
                 </MenuItem>
                 {!isBacklog && list.cards.length > 0 && (
                     <MenuItem onClick={handleClearClick}>
                         <ListItemIcon>
                             <CleaningServices fontSize="small" color="warning" />
                         </ListItemIcon>
-                        <ListItemText>Очистити список</ListItemText>
+                        <ListItemText>{t('column.clearList')}</ListItemText>
                     </MenuItem>
                 )}
                 {list.cards.length > 0 && (
@@ -347,7 +349,7 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         <ListItemIcon>
                             <DeleteForever fontSize="small" color="error" />
                         </ListItemIcon>
-                        <ListItemText>Видалити всі тікети</ListItemText>
+                        <ListItemText>{t('column.deleteAllTickets')}</ListItemText>
                     </MenuItem>
                 )}
                 {list.cards.length > 0 && (
@@ -355,7 +357,7 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         <ListItemIcon>
                             <Flag fontSize="small" color="error" />
                         </ListItemIcon>
-                        <ListItemText>Видалити за пріоритетом</ListItemText>
+                        <ListItemText>{t('column.deleteByPriority')}</ListItemText>
                     </MenuItem>
                 )}
                 {!isBacklog && (
@@ -366,7 +368,7 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         <ListItemIcon>
                             <Delete fontSize="small" color="error" />
                         </ListItemIcon>
-                        <ListItemText>Видалити список</ListItemText>
+                        <ListItemText>{t('column.deleteList')}</ListItemText>
                     </MenuItem>
                 )}
             </Menu>
@@ -378,14 +380,14 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                 onClose={() => setPrioritySubmenuAnchor(null)}
             >
                 <Typography variant="caption" sx={{ px: 2, py: 0.5, fontWeight: 600, color: 'text.secondary' }}>
-                    Оберіть пріоритети:
+                    {t('column.selectPriorities')}
                 </Typography>
                 {PRIORITY_OPTIONS.map((opt) => {
                     const count = list.cards.filter((c) => (c.priority || '') === opt.value).length;
                     return (
                         <MenuItem key={opt.value} onClick={() => togglePriority(opt.value)} dense>
                             <Checkbox size="small" checked={selectedPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
-                            <ListItemText primary={`${opt.icon} ${opt.label} (${count})`} />
+                            <ListItemText primary={`${opt.icon} ${t(opt.labelKey)} (${count})`} />
                         </MenuItem>
                     );
                 })}
@@ -399,7 +401,7 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         disabled={selectedPriorities.length === 0}
                         onClick={handlePriorityDeleteProceed}
                     >
-                        Видалити ({list.cards.filter((c) => selectedPriorities.includes(c.priority || '')).length})
+                        {t('common.delete')} ({list.cards.filter((c) => selectedPriorities.includes(c.priority || '')).length})
                     </Button>
                 </Box>
             </Menu>
@@ -435,7 +437,7 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         })
                     }
                 >
-                    Додати картку
+                    {t('board.addCard')}
                 </Button>
             </Box>
 
@@ -443,24 +445,24 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
             <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CleaningServices color="warning" />
-                    Очистити список?
+                    {t('column.clearConfirmTitle')}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Ви дійсно хочете очистити список <strong>"{list.title}"</strong>?
+                        {t('column.clearConfirmText')} <strong>"{list.title}"</strong>?
                     </DialogContentText>
                     <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1, color: 'warning.dark' }}>
                         <Typography variant="body2">
-                            📋 Усі {list.cards.length} карток із цього списку будуть переміщені до колонки <strong>Backlog</strong>.
+                            {t('column.clearInfo', { count: list.cards.length })} <strong>{t('column.backlog')}</strong>.
                         </Typography>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setClearConfirmOpen(false)} disabled={clearing}>
-                        Скасувати
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={handleClearConfirm} variant="contained" color="warning" disabled={clearing}>
-                        {clearing ? 'Переміщення...' : 'Так, очистити'}
+                        {clearing ? t('column.moving') : t('column.yesClear')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -469,27 +471,27 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
             <Dialog open={deleteAllTicketsOpen} onClose={() => setDeleteAllTicketsOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Warning color="error" />
-                    Видалити всі тікети?
+                    {t('column.deleteAllConfirmTitle')}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Ви дійсно хочете <strong>назавжди видалити</strong> всі тікети зі списку <strong>"{list.title}"</strong>?
+                        {t('column.deleteAllConfirmText')} <strong>"{list.title}"</strong>?
                     </DialogContentText>
                     <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
                         <Typography variant="body2" fontWeight={600}>
-                            🗑️ Буде видалено {list.cards.length} {list.cards.length === 1 ? 'тікет' : 'тікетів'} разом з усіма коментарями.
+                            {t('column.deleteAllInfo', { count: list.cards.length })}
                         </Typography>
                         <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            Цю дію не можна скасувати!
+                            {t('column.cannotUndo')}
                         </Typography>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setDeleteAllTicketsOpen(false)} disabled={bulkDeletingAll}>
-                        Скасувати
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={handleDeleteAllTicketsConfirm} variant="contained" color="error" disabled={bulkDeletingAll}>
-                        {bulkDeletingAll ? 'Видалення...' : 'Так, видалити всі'}
+                        {bulkDeletingAll ? t('common.deleting') : t('column.yesDeleteAll')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -498,15 +500,15 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
             <Dialog open={deleteByPriorityOpen} onClose={() => setDeleteByPriorityOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Warning color="error" />
-                    Видалити за пріоритетом?
+                    {t('column.deleteByPriorityTitle')}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Ви дійсно хочете <strong>назавжди видалити</strong> тікети з обраними пріоритетами зі списку <strong>"{list.title}"</strong>?
+                        {t('column.deleteByPriorityText')} <strong>"{list.title}"</strong>?
                     </DialogContentText>
                     <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
                         <Typography variant="body2" fontWeight={600}>
-                            🗑️ Буде видалено {matchingPriorityCards.length} {matchingPriorityCards.length === 1 ? 'тікет' : 'тікетів'}:
+                            {t('column.willBeDeleted', { count: matchingPriorityCards.length })}
                         </Typography>
                         <Box sx={{ mt: 0.5 }}>
                             {selectedPriorities.map((p) => {
@@ -514,22 +516,22 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                                 const count = list.cards.filter((c) => (c.priority || '') === p).length;
                                 return (
                                     <Typography key={p} variant="body2">
-                                        {opt?.icon} {opt?.label}: {count} тікетів
+                                        {opt?.icon} {opt ? t(opt.labelKey) : ''}: {count} {t('column.tickets')}
                                     </Typography>
                                 );
                             })}
                         </Box>
                         <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            Цю дію не можна скасувати!
+                            {t('column.cannotUndo')}
                         </Typography>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setDeleteByPriorityOpen(false)} disabled={bulkDeletingPriority}>
-                        Скасувати
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={handleDeleteByPriorityConfirm} variant="contained" color="error" disabled={bulkDeletingPriority}>
-                        {bulkDeletingPriority ? 'Видалення...' : `Так, видалити (${matchingPriorityCards.length})`}
+                        {bulkDeletingPriority ? t('common.deleting') : `${t('deleteConfirm.yesDelete')} (${matchingPriorityCards.length})`}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -538,32 +540,32 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
             <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Warning color="error" />
-                    Видалити список?
+                    {t('column.deleteListTitle')}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Ви дійсно хочете видалити список <strong>"{list.title}"</strong>?
+                        {t('column.deleteListText')} <strong>"{list.title}"</strong>?
                     </DialogContentText>
                     {list.cards.length > 0 ? (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1, color: 'warning.dark' }}>
                             <Typography variant="body2">
-                                📋 Усі {list.cards.length} карток із цього списку будуть переміщені до колонки <strong>Backlog</strong>.
+                                {t('column.deleteListCardsInfo', { count: list.cards.length })} <strong>{t('column.backlog')}</strong>.
                             </Typography>
                         </Box>
                     ) : (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1, color: 'text.secondary' }}>
                             <Typography variant="body2">
-                                Цей список порожній і буде видалений.
+                                {t('column.emptyListInfo')}
                             </Typography>
                         </Box>
                     )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
-                        Скасувати
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={handleDeleteConfirm} variant="contained" color="error" disabled={deleting}>
-                        {deleting ? 'Видалення...' : 'Так, видалити'}
+                        {deleting ? t('common.deleting') : t('deleteConfirm.yesDelete')}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Box,
@@ -118,16 +119,16 @@ interface BoardData {
 // ─── Preset colors ─────────────────────────────────────────
 
 const PRESET_COLORS = [
-  { name: 'Синій', value: '#0079bf' },
-  { name: 'Зелений', value: '#61bd4f' },
-  { name: 'Помаранчевий', value: '#ff9f1a' },
-  { name: 'Червоний', value: '#eb5a46' },
-  { name: 'Фіолетовий', value: '#c377e0' },
-  { name: 'Рожевий', value: '#ff78cb' },
-  { name: 'Блакитний', value: '#00c2e0' },
-  { name: 'Лаймовий', value: '#51e898' },
-  { name: 'Темно-синій', value: '#344563' },
-  { name: 'Сірий', value: '#838c91' },
+  { nameKey: 'colors.blue', value: '#0079bf' },
+  { nameKey: 'colors.green', value: '#61bd4f' },
+  { nameKey: 'colors.orange', value: '#ff9f1a' },
+  { nameKey: 'colors.red', value: '#eb5a46' },
+  { nameKey: 'colors.purple', value: '#c377e0' },
+  { nameKey: 'colors.pink', value: '#ff78cb' },
+  { nameKey: 'colors.lightBlue', value: '#00c2e0' },
+  { nameKey: 'colors.lime', value: '#51e898' },
+  { nameKey: 'colors.darkBlue', value: '#344563' },
+  { nameKey: 'colors.gray', value: '#838c91' },
 ];
 
 // ─── Component ─────────────────────────────────────────────
@@ -135,6 +136,7 @@ const PRESET_COLORS = [
 export default function ProjectEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -193,26 +195,26 @@ export default function ProjectEditPage() {
     const newErrors: { title?: string; boardIdentifier?: string } = {};
 
     if (!title.trim()) {
-      newErrors.title = 'Назва проекту обов\'язкова';
+      newErrors.title = t('validation.titleRequired');
     } else if (title.trim().length < 3) {
-      newErrors.title = 'Назва має бути мінімум 3 символи';
+      newErrors.title = t('validation.titleMin3');
     } else if (title.length > 50) {
-      newErrors.title = 'Назва не може перевищувати 50 символів';
+      newErrors.title = t('validation.titleMax50');
     }
 
     if (boardIdentifier.trim()) {
       if (boardIdentifier.trim().length < 2) {
-        newErrors.boardIdentifier = 'Ідентифікатор має бути мінімум 2 символи';
+        newErrors.boardIdentifier = t('validation.identifierMin2');
       } else if (boardIdentifier.trim().length > 10) {
-        newErrors.boardIdentifier = 'Ідентифікатор не може перевищувати 10 символів';
+        newErrors.boardIdentifier = t('validation.identifierMax10');
       } else if (!/^[A-Za-z0-9-]+$/.test(boardIdentifier.trim())) {
-        newErrors.boardIdentifier = 'Тільки літери, цифри та дефіс';
+        newErrors.boardIdentifier = t('validation.identifierFormatShort');
       }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title, boardIdentifier]);
+  }, [title, boardIdentifier, t]);
 
   // ─── Save board info ─────────────────────────────────────
 
@@ -251,11 +253,11 @@ export default function ProjectEditPage() {
       }
 
       await refetch();
-      setSnackbar({ open: true, message: 'Проект оновлено!', severity: 'success' });
+      setSnackbar({ open: true, message: t('projectEdit.updateSuccess'), severity: 'success' });
       setHasChanges(false);
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Помилка збереження', severity: 'error' });
+      setSnackbar({ open: true, message: t('projectEdit.saveError'), severity: 'error' });
     }
   };
 
@@ -271,10 +273,10 @@ export default function ProjectEditPage() {
       setNewListTitle('');
       setIsAddingList(false);
       await refetch();
-      setSnackbar({ open: true, message: 'Колонку додано', severity: 'success' });
+      setSnackbar({ open: true, message: t('projectEdit.columnAdded'), severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Помилка додавання колонки', severity: 'error' });
+      setSnackbar({ open: true, message: t('projectEdit.columnAddError'), severity: 'error' });
     }
   };
 
@@ -290,7 +292,7 @@ export default function ProjectEditPage() {
       await refetch();
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Помилка перейменування', severity: 'error' });
+      setSnackbar({ open: true, message: t('projectEdit.renameError'), severity: 'error' });
     }
   };
 
@@ -298,10 +300,10 @@ export default function ProjectEditPage() {
     try {
       await deleteList({ variables: { id: listId } });
       await refetch();
-      setSnackbar({ open: true, message: 'Колонку видалено', severity: 'success' });
+      setSnackbar({ open: true, message: t('projectEdit.columnDeleted'), severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Помилка видалення', severity: 'error' });
+      setSnackbar({ open: true, message: t('projectEdit.columnDeleteError'), severity: 'error' });
     }
   };
 
@@ -351,10 +353,10 @@ export default function ProjectEditPage() {
     return (
       <Container sx={{ mt: 4 }}>
         <Alert severity="error">
-          {error ? `Помилка: ${error.message}` : 'Проект не знайдено'}
+          {error ? `${t('common.error')}: ${error.message}` : t('projectEdit.projectNotFound')}
         </Alert>
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
-          Повернутись до проектів
+          {t('projectEdit.backToProjectsList')}
         </Button>
       </Container>
     );
@@ -373,10 +375,10 @@ export default function ProjectEditPage() {
             </IconButton>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" sx={{ opacity: 0.85 }}>
-                Налаштування проекту
+                {t('projectEdit.settingsTitle')}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {title || 'Без назви'}
+                {title || t('common.untitled')}
               </Typography>
             </Box>
             <Button
@@ -392,7 +394,7 @@ export default function ProjectEditPage() {
                 '&.Mui-disabled': { color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.2)' },
               }}
             >
-              {savingBoard ? 'Збереження...' : 'Зберегти'}
+              {savingBoard ? t('common.saving') : t('common.save')}
             </Button>
           </Box>
         </Container>
@@ -402,12 +404,12 @@ export default function ProjectEditPage() {
         {/* ── Section: Basic Info ── */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Основна інформація
+            {t('projectEdit.basicInfo')}
           </Typography>
 
           <TextField
             fullWidth
-            label="Назва проекту"
+            label={t('projectEdit.projectName')}
             value={title}
             onChange={(e) => { setTitle(e.target.value); setHasChanges(true); }}
             error={!!errors.title}
@@ -418,14 +420,13 @@ export default function ProjectEditPage() {
 
           <TextField
             fullWidth
-            label="Ідентифікатор проекту"
-            placeholder="Наприклад: PROJ або MY-APP"
+            label={t('projectEdit.projectIdentifier')}
+            placeholder={t('createBoard.projectIdentifierPlaceholder')}
             value={boardIdentifier}
             onChange={(e) => { setBoardIdentifier(e.target.value.toUpperCase()); setHasChanges(true); }}
             error={!!errors.boardIdentifier}
             helperText={
-              errors.boardIdentifier ||
-              'Необов\'язково. 2-10 символів (літери, цифри, дефіс). Використовується як префікс для карток.'
+              errors.boardIdentifier || t('projectEdit.identifierHelp')
             }
             margin="normal"
             inputProps={{ maxLength: 10 }}
@@ -435,7 +436,7 @@ export default function ProjectEditPage() {
         {/* ── Section: Color ── */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Колір проекту
+            {t('projectEdit.projectColor')}
           </Typography>
 
           <Box
@@ -447,7 +448,7 @@ export default function ProjectEditPage() {
             }}
           >
             {PRESET_COLORS.map((c) => (
-              <Tooltip key={c.value} title={c.name}>
+              <Tooltip key={c.value} title={t(c.nameKey)}>
                 <Box
                   onClick={() => { setColor(c.value); setHasChanges(true); }}
                   sx={{
@@ -495,11 +496,11 @@ export default function ProjectEditPage() {
             }}
           >
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {title || 'Назва проекту'}
+              {title || t('projectEdit.projectName')}
             </Typography>
             {boardIdentifier && (
               <Typography variant="body2" color="text.secondary">
-                Ідентифікатор: <strong>{boardIdentifier}</strong>
+                {t('createBoard.identifier')}: <strong>{boardIdentifier}</strong>
               </Typography>
             )}
           </Box>
@@ -509,7 +510,7 @@ export default function ProjectEditPage() {
         <Paper sx={{ p: 3, mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Колонки ({lists.length})
+              {t('projectEdit.columns')} ({lists.length})
             </Typography>
             {!isAddingList && (
               <Button
@@ -518,13 +519,13 @@ export default function ProjectEditPage() {
                 onClick={() => setIsAddingList(true)}
                 sx={{ textTransform: 'none' }}
               >
-                Додати колонку
+                {t('projectEdit.addColumn')}
               </Button>
             )}
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Перетягуйте колонки за іконку ☰ для зміни порядку
+            {t('projectEdit.dragHint')}
           </Typography>
 
           {lists.length === 0 && !isAddingList && (
@@ -538,7 +539,7 @@ export default function ProjectEditPage() {
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Немає колонок
+                {t('projectEdit.noColumns')}
               </Typography>
               <Button
                 size="small"
@@ -546,7 +547,7 @@ export default function ProjectEditPage() {
                 startIcon={<Add />}
                 onClick={() => setIsAddingList(true)}
               >
-                Додати першу колонку
+                {t('projectEdit.addFirstColumn')}
               </Button>
             </Box>
           )}
@@ -639,7 +640,7 @@ export default function ProjectEditPage() {
                 {/* Action buttons */}
                 {editingListId !== list.id && (
                   <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-                    <Tooltip title="Перейменувати">
+                    <Tooltip title={t('column.rename')}>
                       <IconButton
                         size="small"
                         onClick={() => {
@@ -650,7 +651,7 @@ export default function ProjectEditPage() {
                         <Edit fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Видалити">
+                    <Tooltip title={t('common.delete')}>
                       <IconButton
                         size="small"
                         color="error"
@@ -681,7 +682,7 @@ export default function ProjectEditPage() {
                 <Add sx={{ color: 'primary.main', flexShrink: 0 }} />
                 <TextField
                   size="small"
-                  placeholder="Назва нової колонки..."
+                  placeholder={t('projectEdit.newColumnPlaceholder')}
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
                   onKeyDown={(e) => {
@@ -700,7 +701,7 @@ export default function ProjectEditPage() {
                   disabled={creatingList || !newListTitle.trim()}
                   sx={{ textTransform: 'none', whiteSpace: 'nowrap' }}
                 >
-                  Додати
+                  {t('common.add')}
                 </Button>
                 <IconButton
                   size="small"
@@ -723,7 +724,7 @@ export default function ProjectEditPage() {
             onClick={() => navigate(`/board/${id}`)}
             sx={{ textTransform: 'none' }}
           >
-            Повернутись до дошки
+            {t('projectEdit.backToBoard')}
           </Button>
           <Button
             variant="contained"
@@ -732,7 +733,7 @@ export default function ProjectEditPage() {
             disabled={savingBoard || !hasChanges}
             sx={{ textTransform: 'none' }}
           >
-            {savingBoard ? 'Збереження...' : 'Зберегти зміни'}
+            {savingBoard ? t('common.saving') : t('projectEdit.saveChanges')}
           </Button>
         </Box>
       </Container>
