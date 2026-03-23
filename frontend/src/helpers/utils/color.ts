@@ -4,6 +4,7 @@ export  const PRIORITY_CONFIG: Record<string, { labelKey: string; color: string;
     HIGH: { labelKey: 'priority.high', color: '#c62828', bg: '#ffebee', icon: '🔴' },
 };
 
+export const PRIORITY_OPTIONS = Object.entries(PRIORITY_CONFIG);
 export  function getDueDateColors(dueDate: string): { bg: string; color: string } {
     const now = new Date();
     const due = new Date(dueDate);

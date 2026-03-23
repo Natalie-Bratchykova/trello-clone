@@ -1,13 +1,47 @@
 import {formatDate} from "./dateLocale.ts";
-export const COMMENT_QUILL_MODULES = {
-    toolbar: [
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['blockquote', 'code-block'],
-        ['link'],
-        ['clean'],
-    ],
+// export const COMMENT_QUILL_MODULES = {
+//     toolbar: [
+//         ['bold', 'italic', 'underline', 'strike'],
+//         [{ list: 'ordered' }, { list: 'bullet' }],
+//         ['blockquote', 'code-block'],
+//         ['link'],
+//         ['clean'],
+//     ],
+// };
+
+export const QUILL_MODULES = function(isComment = true) {
+    let toolbars = {
+        toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            [{ color: [] }, { background: [] }],
+            ['blockquote', 'code-block'],
+            ['link'],
+            ['clean'],
+        ],
+    }
+    if (!isComment) {
+         toolbars.toolbar.unshift([{ header: [1, 2, 3, false] }]), toolbars;
+    }
+        return toolbars;
+
 };
+
+export const QUILL_FORMATS = function (isComment = true) {
+    let formats = [
+        'bold', 'italic', 'underline', 'strike',
+        'list',
+        'color', 'background',
+        'blockquote', 'code-block',
+        'link',
+    ];
+    if (!isComment) {
+         formats.unshift('header');
+    }
+    console.log(formats)
+        return formats;
+
+}
 
 export const COMMENT_QUILL_FORMATS = [
     'bold', 'italic', 'underline', 'strike',

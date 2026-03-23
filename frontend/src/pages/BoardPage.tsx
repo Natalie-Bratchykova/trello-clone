@@ -53,6 +53,7 @@ import { GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET, DELETE_ALL_LISTS_EXCEPT_B
 import BoardColumn from '../components/BoardColumn.tsx';
 import { gql } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
+import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
 
 interface Card {
   id: string;
@@ -104,12 +105,6 @@ interface Board {
   createdAt: string;
   lists: List[];
 }
-
-const PRIORITY_OPTIONS = [
-  { value: 'LOW', labelKey: 'priority.low', icon: '🟢', color: '#4caf50' },
-  { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠', color: '#ff9800' },
-  { value: 'HIGH', labelKey: 'priority.high', icon: '🔴', color: '#f44336' },
-];
 
 type PrioritySortMode = 'low-medium-high' | 'high-medium-low' | 'medium-high-low';
 
@@ -701,13 +696,13 @@ export default function BoardPage() {
               </Typography>
               {PRIORITY_OPTIONS.map((opt) => {
                 const count = board.lists.reduce(
-                  (sum, l) => sum + l.cards.filter((c) => (c.priority || '') === opt.value).length,
+                  (sum, l) => sum + l.cards.filter((c) => (c.priority || '') === opt[0]).length,
                   0,
                 );
                 return (
-                  <MenuItem key={opt.value} onClick={() => toggleBoardPriority(opt.value)} dense>
-                    <Checkbox size="small" checked={selectedBoardPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
-                    <ListItemText primary={`${opt.icon} ${t(opt.labelKey)} (${count})`} />
+                  <MenuItem key={opt[0]} onClick={() => toggleBoardPriority(opt[0])} dense>
+                    <Checkbox size="small" checked={selectedBoardPriorities.includes(opt[0])} sx={{ p: 0, mr: 1 }} />
+                    <ListItemText primary={`${opt[1].icon} ${t(opt[1].labelKey)} (${count})`} />
                   </MenuItem>
                 );
               })}
@@ -823,9 +818,9 @@ export default function BoardPage() {
                   ) : null;
                 })}
                 {selectedPriorities.map((p) => {
-                  const opt = PRIORITY_OPTIONS.find((x) => x.value === p);
+                  const opt = PRIORITY_OPTIONS.find((x) => x[0] === p);
                   return opt ? (
-                    <Chip key={p} label={`${opt.icon} ${opt.label}`} size="small" onDelete={() => togglePriority(p)} sx={{ fontSize: '0.75rem' }} />
+                    <Chip key={p} label={`${opt[1].icon} ${opt[1].label}`} size="small" onDelete={() => togglePriority(p)} sx={{ fontSize: '0.75rem' }} />
                   ) : null;
                 })}
                 {sortBy !== 'none' && (
@@ -938,10 +933,10 @@ export default function BoardPage() {
             </Button>
             <Menu anchorEl={priorityMenuAnchor} open={Boolean(priorityMenuAnchor)} onClose={() => setPriorityMenuAnchor(null)}>
               {PRIORITY_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} onClick={() => togglePriority(opt.value)} dense>
-                  <Checkbox size="small" checked={selectedPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
+                <MenuItem key={opt[0]} onClick={() => togglePriority(opt[0])} dense>
+                  <Checkbox size="small" checked={selectedPriorities.includes(opt[0])} sx={{ p: 0, mr: 1 }} />
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: opt.color, mr: 1 }} />
-                  <ListItemText primary={`${opt.icon} ${t(opt.labelKey)}`} primaryTypographyProps={{ variant: 'body2' }} />
+                  <ListItemText primary={`${opt[1].icon} ${t(opt[1].labelKey)}`} primaryTypographyProps={{ variant: 'body2' }} />
                 </MenuItem>
               ))}
             </Menu>
@@ -1243,13 +1238,13 @@ export default function BoardPage() {
             </Typography>
             <Box sx={{ mt: 0.5 }}>
               {selectedBoardPriorities.map((p) => {
-                const opt = PRIORITY_OPTIONS.find((o) => o.value === p);
+                const opt = PRIORITY_OPTIONS.find((o) => o[0] === p);
                 const count = board
                   ? board.lists.reduce((sum, l) => sum + l.cards.filter((c) => (c.priority || '') === p).length, 0)
                   : 0;
                 return (
                   <Typography key={p} variant="body2">
-                    {opt?.icon} {opt ? t(opt.labelKey) : ''}: {count}
+                    {opt[1]?.icon} {opt ? t(opt[1].labelKey) : ''}: {count}
                   </Typography>
                 );
               })}

@@ -26,6 +26,7 @@ import { useDrop } from 'react-dnd';
 import { ItemTypes } from '../helpers/types/ItemTypes.ts';
 import { BULK_DELETE_CARDS_BY_LIST, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
 import { useTranslation } from 'react-i18next';
+import { PRIORITY_OPTIONS } from '../helpers/utils/color.ts';
 
 const UPDATE_LIST_MUTATION = gql`
   mutation UpdateListTitle($id: ID!, $data: UpdateListInput!) {
@@ -42,11 +43,6 @@ const DELETE_LIST_MUTATION = gql`
   }
 `;
 
-const PRIORITY_OPTIONS = [
-    { value: 'LOW', labelKey: 'priority.low', icon: '🟢' },
-    { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠' },
-    { value: 'HIGH', labelKey: 'priority.high', icon: '🔴' },
-];
 
 export interface BoardColumnProps {
     list: {
@@ -383,11 +379,11 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                     {t('column.selectPriorities')}
                 </Typography>
                 {PRIORITY_OPTIONS.map((opt) => {
-                    const count = list.cards.filter((c) => (c.priority || '') === opt.value).length;
+                    const count = list.cards.filter((c) => (c.priority || '') === opt[0]).length;
                     return (
-                        <MenuItem key={opt.value} onClick={() => togglePriority(opt.value)} dense>
-                            <Checkbox size="small" checked={selectedPriorities.includes(opt.value)} sx={{ p: 0, mr: 1 }} />
-                            <ListItemText primary={`${opt.icon} ${t(opt.labelKey)} (${count})`} />
+                        <MenuItem key={opt[0]} onClick={() => togglePriority(opt[0])} dense>
+                            <Checkbox size="small" checked={selectedPriorities.includes(opt[0])} sx={{ p: 0, mr: 1 }} />
+                            <ListItemText primary={`${opt[1].icon} ${t(opt[1].labelKey)} (${count})`} />
                         </MenuItem>
                     );
                 })}
@@ -512,11 +508,11 @@ export default function BoardColumn({ list, setCardDialogState, lastDroppedCardI
                         </Typography>
                         <Box sx={{ mt: 0.5 }}>
                             {selectedPriorities.map((p) => {
-                                const opt = PRIORITY_OPTIONS.find((o) => o.value === p);
+                                const opt = PRIORITY_OPTIONS.find((o) => o[0] === p);
                                 const count = list.cards.filter((c) => (c.priority || '') === p).length;
                                 return (
                                     <Typography key={p} variant="body2">
-                                        {opt?.icon} {opt ? t(opt.labelKey) : ''}: {count} {t('column.tickets')}
+                                        {opt[1]?.icon} {opt ? t(opt[1].labelKey) : ''}: {count} {t('column.tickets')}
                                     </Typography>
                                 );
                             })}

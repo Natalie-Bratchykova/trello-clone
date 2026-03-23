@@ -18,101 +18,15 @@ import {
   Chip,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
-import {GET_USERS_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from "../helpers/gql/cardGQL.ts";
-import {PRIORITY_CONFIG} from "../helpers/utils/color.ts";
+import {GET_USERS_EDIT_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from "../helpers/gql/cardGQL.ts";
+import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
+import {QUILL_MODULES, QUILL_FORMATS} from "../helpers/utils/textEditorHelper.ts";
+import type {User, ParentCardOption, EditCardDialogProps, EditCardData, UpdateCardData, GetUsersData} from '../helpers/types/cardType.ts'
 
-
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  profileImage?: string;
-}
-
-interface ParentCardOption {
-  id: string;
-  title: string;
-  suffix?: string;
-  listTitle?: string;
-}
-
-interface GetUsersData {
-  users: User[];
-}
-
-interface UpdateCardData {
-  updateCard: {
-    card: {
-      id: string;
-      title: string;
-      description: string;
-      position: number;
-      dueDate: string;
-      priority: string;
-      suffix: string;
-      listId: string;
-      userId: string;
-      parentId: string;
-      createdAt: string;
-      updatedAt: string;
-      user: User;
-    };
-    movedReleaseTasks: { id: string; listId: string; position: number }[];
-  };
-}
-
-export interface EditCardData {
-  id: string;
-  title: string;
-  description?: string;
-  priority?: string;
-  dueDate?: string;
-  userId?: string;
-  parentId?: string;
-  user?: {
-    id: string;
-    name: string;
-    email?: string;
-    profileImage?: string;
-  } | null;
-}
-
-const PRIORITY_OPTIONS = Object.entries(PRIORITY_CONFIG);
-console.log(PRIORITY_OPTIONS)
-const QUILL_MODULES = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ color: [] }, { background: [] }],
-    ['blockquote', 'code-block'],
-    ['link'],
-    ['clean'],
-  ],
-};
-
-const QUILL_FORMATS = [
-  'header',
-  'bold', 'italic', 'underline', 'strike',
-  'list',
-  'color', 'background',
-  'blockquote', 'code-block',
-  'link',
-];
-
-interface EditCardDialogProps {
-  open: boolean;
-  onClose: () => void;
-  card: EditCardData | null;
-  boardId?: string;
-  onCardUpdated?: () => void;
-}
 
 export default function EditCardDialog({
   open,
@@ -129,7 +43,7 @@ export default function EditCardDialog({
   const [parentTask, setParentTask] = useState<ParentCardOption | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
   const { t } = useTranslation();
-  const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_QUERY, {
+  const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_EDIT_QUERY, {
     skip: !open,
   });
 
@@ -309,8 +223,8 @@ export default function EditCardDialog({
                 theme="snow"
                 value={description}
                 onChange={setDescription}
-                modules={QUILL_MODULES}
-                formats={QUILL_FORMATS}
+                modules={QUILL_MODULES(false)}
+                formats={QUILL_FORMATS(false)}
                 placeholder={t('createCard.descriptionPlaceholder')}
                 readOnly={loading}
               />

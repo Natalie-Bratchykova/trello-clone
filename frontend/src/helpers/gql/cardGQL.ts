@@ -109,7 +109,7 @@ export const UPDATE_CARD_LIST = gql`
   }
 `;
 
-export const GET_USERS_QUERY = gql`
+export const GET_USERS_EDIT_QUERY = gql`
   query GetUsersForEdit {
     users {
       id
@@ -185,6 +185,65 @@ export const UPDATE_CARD_MUTATION = gql`
         list {
           id
           title
+        }
+      }
+    }
+  }
+`;
+
+export const GET_USERS_QUERY = gql`
+  query GetUsers {
+    users {
+      id
+      name
+      email
+    }
+  }
+`;
+
+export const CREATE_CARD_MUTATION = gql`
+  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID, $parentId: ID, $type: CardType, $releaseTaskIds: [ID!]) {
+    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId, parentId: $parentId, type: $type, releaseTaskIds: $releaseTaskIds }) {
+      id
+      title
+      description
+      position
+      dueDate
+      priority
+      type
+      suffix
+      parentId
+      userId
+      user {
+        id
+        name
+        email
+      }
+      parent {
+        id
+        title
+        suffix
+      }
+      releaseTasks {
+        id
+        title
+        suffix
+      }
+    }
+  }
+`;
+
+export const GET_BOARD_CARDS_FOR_CREATE = gql`
+  query GetBoardCardsForCreate($boardId: ID!) {
+    board(id: $boardId) {
+      id
+      lists {
+        id
+        title
+        cards {
+          id
+          title
+          suffix
         }
       }
     }

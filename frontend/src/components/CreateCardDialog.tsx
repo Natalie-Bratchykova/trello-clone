@@ -26,70 +26,16 @@ import {
   ListItemText,
 } from '@mui/material';
 import { Close, Task, RocketLaunch } from '@mui/icons-material';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
+import { QUILL_MODULES, QUILL_FORMATS } from '../helpers/utils/textEditorHelper.ts';
+import {GET_USERS_QUERY, CREATE_CARD_MUTATION, GET_BOARD_CARDS_FOR_CREATE} from "../helpers/gql/cardGQL.ts";
+import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
 
-const GET_USERS_QUERY = gql`
-  query GetUsers {
-    users {
-      id
-      name
-      email
-    }
-  }
-`;
 
-const CREATE_CARD_MUTATION = gql`
-  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID, $parentId: ID, $type: CardType, $releaseTaskIds: [ID!]) {
-    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId, parentId: $parentId, type: $type, releaseTaskIds: $releaseTaskIds }) {
-      id
-      title
-      description
-      position
-      dueDate
-      priority
-      type
-      suffix
-      parentId
-      userId
-      user {
-        id
-        name
-        email
-      }
-      parent {
-        id
-        title
-        suffix
-      }
-      releaseTasks {
-        id
-        title
-        suffix
-      }
-    }
-  }
-`;
 
-const GET_BOARD_CARDS_FOR_CREATE = gql`
-  query GetBoardCardsForCreate($boardId: ID!) {
-    board(id: $boardId) {
-      id
-      lists {
-        id
-        title
-        cards {
-          id
-          title
-          suffix
-        }
-      }
-    }
-  }
-`;
 
 interface User {
   id: string;
@@ -122,32 +68,6 @@ interface CreateCardData {
   };
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'LOW', labelKey: 'priority.low', color: '#4caf50' },
-  { value: 'MEDIUM', labelKey: 'priority.medium', color: '#ff9800' },
-  { value: 'HIGH', labelKey: 'priority.high', color: '#f44336' },
-];
-
-const QUILL_MODULES = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ color: [] }, { background: [] }],
-    ['blockquote', 'code-block'],
-    ['link'],
-    ['clean'],
-  ],
-};
-
-const QUILL_FORMATS = [
-  'header',
-  'bold', 'italic', 'underline', 'strike',
-  'list',
-  'color', 'background',
-  'blockquote', 'code-block',
-  'link',
-];
 
 interface CreateCardDialogProps {
   open: boolean;
@@ -346,8 +266,8 @@ export default function CreateCardDialog({
                 theme="snow"
                 value={description}
                 onChange={setDescription}
-                modules={QUILL_MODULES}
-                formats={QUILL_FORMATS}
+                modules={QUILL_MODULES()}
+                formats={QUILL_FORMATS()}
                 placeholder={t('createCard.descriptionPlaceholder')}
                 readOnly={loading}
               />
@@ -364,17 +284,17 @@ export default function CreateCardDialog({
               disabled={loading}
             >
               {PRIORITY_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={option[0]} value={option[0]}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                       sx={{
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
-                        backgroundColor: option.color,
+                        backgroundColor: option[1].color,
                       }}
                     />
-                    {t(option.labelKey)}
+                    {t(option[1].labelKey)}
                   </Box>
                 </MenuItem>
               ))}

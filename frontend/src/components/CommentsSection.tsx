@@ -17,8 +17,17 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
 import {GET_CARD_COMMENTS, CREATE_COMMENT, UPDATE_COMMENT, DELETE_COMMENT} from "../helpers/gql/commentsGQL.ts";
-import {COMMENT_QUILL_MODULES, COMMENT_QUILL_FORMATS, isQuillContentEmpty, descriptionToChecklist, isChecklist, toggleChecklistItem, getCheckStates, formatRelativeTime} from "../helpers/utils/textEditorHelper.ts";
-import {Comment, CommentsSectionProps} from '../helpers/types/commentTypes.ts';
+import {
+  QUILL_MODULES,
+  QUILL_FORMATS,
+  isQuillContentEmpty,
+  descriptionToChecklist,
+  isChecklist,
+  toggleChecklistItem,
+  getCheckStates,
+  formatRelativeTime
+} from "../helpers/utils/textEditorHelper.ts";
+import type {Comment, CommentsSectionProps} from '../helpers/types/commentTypes.ts';
 
 
 export default function CommentsSection({ cardId, cardDescription }: CommentsSectionProps) {
@@ -126,8 +135,8 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
               theme="snow"
               value={newComment}
               onChange={setNewComment}
-              modules={COMMENT_QUILL_MODULES}
-              formats={COMMENT_QUILL_FORMATS}
+              modules={QUILL_MODULES(true)}
+              formats={QUILL_FORMATS()}
               placeholder={t('comments.placeholder')}
               readOnly={creating}
             />
@@ -229,8 +238,8 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
                       theme="snow"
                       value={editContent}
                       onChange={setEditContent}
-                      modules={COMMENT_QUILL_MODULES}
-                      formats={COMMENT_QUILL_FORMATS}
+                      modules={QUILL_MODULES(true)}
+                      formats={QUILL_FORMATS()}
                     />
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
