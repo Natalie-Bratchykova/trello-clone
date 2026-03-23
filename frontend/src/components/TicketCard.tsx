@@ -1,7 +1,7 @@
 import {Avatar, Box, Chip, Paper, Typography} from "@mui/material";
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
-import {formatDate} from "../helpers/dateLocale.ts";
+import {formatDate} from "../helpers/utils/dateLocale.ts";
 import i18n from "i18next";
 
 function getDueDateColors(dueDate: string): { bg: string; color: string } {

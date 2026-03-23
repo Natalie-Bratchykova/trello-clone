@@ -1,6 +1,6 @@
 import {Link as RouterLink} from "react-router";
 import {Chip, Link, Typography} from "@mui/material";
-import {definePriorityLabel} from "../../helpers/color.ts";
+import {definePriorityLabel} from "../../helpers/utils/color.ts";
 
 
 export default function SubTask({child}) {

@@ -29,8 +29,8 @@ import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, D
 import CommentsSection from "../components/CommentsSection.tsx";
 import EditCardDialog from "../components/EditCardDialog.tsx";
 import { useTranslation } from 'react-i18next';
-import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/color.ts";
-import {formatDate} from "../helpers/dateLocale.ts";
+import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/utils/color.ts";
+import {formatDate} from "../helpers/utils/dateLocale.ts";
 import {GET_CARD, GET_BOARD_LISTS, UPDATE_CARD_LIST, DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION} from "../helpers/gql/cardGQL.ts";
 import TextEditorUneditable from "../components/Ticket/TextEditorUneditable.tsx";
 

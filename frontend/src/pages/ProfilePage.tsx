@@ -38,7 +38,7 @@ import { useTranslation } from 'react-i18next';
 // GraphQL запити
 import {UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
 import {useUserData} from "../hooks/useUserData.ts";
-import {formatDate} from "../helpers/dateLocale.ts";
+import {formatDate} from "../helpers/utils/dateLocale.ts";
 
 
 interface ProfilePageProps {

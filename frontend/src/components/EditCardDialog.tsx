@@ -23,87 +23,10 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
-const GET_USERS_QUERY = gql`
-  query GetUsersForEdit {
-    users {
-      id
-      name
-      email
-    }
-  }
-`;
+import {GET_USERS_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from "../helpers/gql/cardGQL.ts";
+import {PRIORITY_CONFIG} from "../helpers/utils/color.ts";
 
-const GET_BOARD_CARDS_QUERY = gql`
-  query GetBoardCardsForParent($boardId: ID!) {
-    board(id: $boardId) {
-      id
-      lists {
-        id
-        title
-        cards {
-          id
-          title
-          suffix
-        }
-      }
-    }
-  }
-`;
 
-const UPDATE_CARD_MUTATION = gql`
-  mutation UpdateCard($id: ID!, $data: UpdateCardInput!) {
-    updateCard(id: $id, data: $data) {
-      card {
-        id
-        title
-        description
-        position
-        dueDate
-        priority
-        suffix
-        listId
-        userId
-        parentId
-        createdAt
-        updatedAt
-        user {
-          id
-          name
-          email
-          profileImage
-        }
-        parent {
-          id
-          title
-          suffix
-        }
-        children {
-          id
-          title
-          suffix
-        }
-        list {
-          id
-          title
-          board {
-            id
-            title
-            color
-          }
-        }
-      }
-      movedReleaseTasks {
-        id
-        listId
-        position
-        list {
-          id
-          title
-        }
-      }
-    }
-  }
-`;
 
 interface User {
   id: string;
@@ -160,12 +83,8 @@ export interface EditCardData {
   } | null;
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'LOW', labelKey: 'priority.low', icon: '🟢' },
-  { value: 'MEDIUM', labelKey: 'priority.medium', icon: '🟠' },
-  { value: 'HIGH', labelKey: 'priority.high', icon: '🔴' },
-];
-
+const PRIORITY_OPTIONS = Object.entries(PRIORITY_CONFIG);
+console.log(PRIORITY_OPTIONS)
 const QUILL_MODULES = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
@@ -407,18 +326,18 @@ export default function EditCardDialog({
               onChange={(e) => setPriority(e.target.value as string)}
               disabled={loading}
             >
-              {PRIORITY_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+              {PRIORITY_OPTIONS.map(( option) => (
+                <MenuItem key={option[1].labelKey} value={option[0]}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                       sx={{
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
-                        backgroundColor: option.color,
+                        backgroundColor: option[1].color,
                       }}
                     />
-                    {t(option.labelKey)}
+                    {t(option[1].labelKey)}
                   </Box>
                 </MenuItem>
               ))}

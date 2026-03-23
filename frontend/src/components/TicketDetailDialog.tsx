@@ -23,10 +23,10 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
-import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/color.ts";
+import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/utils/color.ts";
 import { useTranslation } from 'react-i18next';
 import {DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION, GET_BOARD_LISTS, UPDATE_CARD_LIST} from "../helpers/gql/cardGQL.ts";
-import {formatDate} from "../helpers/dateLocale.ts";
+import {formatDate} from "../helpers/utils/dateLocale.ts";
 import SubTask from "./Ticket/SubTask.tsx";
 import DetailField from "./Ticket/DetailField.tsx";
 import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
@@ -649,7 +649,6 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
         }}
       />
 
-      {/* Delete confirmation dialog */}
     <DeleteCartDialog setDeleteConfirmOpen={setDeleteConfirmOpen} deleting={ deleting} t={t} deleteConfirmOpen={deleteConfirmOpen} handleDelete={handleDelete} card={card}/>
     </Dialog>
   );

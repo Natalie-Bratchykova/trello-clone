@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
-import {formatDate} from "../helpers/dateLocale.ts";
+import {formatDate} from "../helpers/utils/dateLocale.ts";
 
 interface BoardCardProps {
   board: {
