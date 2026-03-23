@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
+import {formatDate} from "../helpers/dateLocale.ts";
 
 interface BoardCardProps {
   board: {
@@ -86,7 +87,7 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
         </Box>
 
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          {t('board.created')}: {new Date(board.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
+          {t('board.created')}: {formatDate(i18n.language, board.createdAt, false)}
         </Typography>
       </CardContent>
 

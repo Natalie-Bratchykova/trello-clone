@@ -113,7 +113,8 @@
     "cardNamePlaceholder": "E.g.: Design the main page",
     "descriptionOptional": "Description (optional)",
     "descriptionPlaceholder": "Add a detailed description...",
-    "createButton": "Create card"
+    "createButton": "Create card",
+    "cardType": "Card type"
   },
   "editCard": {
     "title": "Edit card",
@@ -156,7 +157,8 @@
     "justNow": "just now",
     "minutesAgo": "{{count}} min ago",
     "hoursAgo": "{{count}} hrs ago",
-    "daysAgo": "{{count}} days ago"
+    "daysAgo": "{{count}} days ago",
+    "copyAsChecklist": "Copy as checklist"
   },
   "ticketDetail": {
     "description": "Description",
@@ -321,5 +323,18 @@
     "uk": "Українська",
     "en": "English",
     "ja": "日本語"
+  },
+  "cardType": {
+    "task": "Task",
+    "release": "Release"
+  },
+  "release": {
+    "selectTasks": "Select tasks to include in release",
+    "selectedCount": "{{count}} task(s) selected",
+    "linkedTasks": "Linked tasks",
+    "colId": "ID",
+    "colName": "Name",
+    "colStatus": "Status",
+    "colExecutor": "Executor"
   }
 }

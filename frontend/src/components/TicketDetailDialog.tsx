@@ -13,68 +13,26 @@ import {
   Divider,
   Link,
   Button,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, Warning, PersonAdd } from '@mui/icons-material';
+import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, Warning, PersonAdd, List as ListIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { gql } from '@apollo/client';
-import { useMutation, useApolloClient } from '@apollo/client/react';
+import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
+import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/color.ts";
 import { useTranslation } from 'react-i18next';
+import {DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION, GET_BOARD_LISTS, UPDATE_CARD_LIST} from "../helpers/gql/cardGQL.ts";
+import {formatDate} from "../helpers/dateLocale.ts";
+import SubTask from "./Ticket/SubTask.tsx";
+import DetailField from "./Ticket/DetailField.tsx";
+import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
+import DeleteCartDialog from "./Ticket/DeleteCartDialog.tsx";
 
-const DELETE_CARD_MUTATION = gql`
-  mutation DeleteCard($id: ID!) {
-    deleteCard(id: $id)
-  }
-`;
 
-const ASSIGN_USER_MUTATION = gql`
-  mutation AssignUserToCard($cardId: ID!, $userId: ID) {
-    assignUser(cardId: $cardId, userId: $userId) {
-      id
-      userId
-      user {
-        id
-        name
-        email
-        profileImage
-      }
-    }
-  }
-`;
-
-const PRIORITY_CONFIG: Record<string, { labelKey: string; color: string; bg: string; icon: string }> = {
-  LOW: { labelKey: 'priority.low', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
-  MEDIUM: { labelKey: 'priority.medium', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
-  HIGH: { labelKey: 'priority.high', color: '#c62828', bg: '#ffebee', icon: '🔴' },
-};
-
-function getDueDateColors(dueDate: string): { bg: string; color: string } {
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-  if (diffDays < 0)   return { bg: '#d32f2f', color: '#fff' };
-  if (diffDays < 5)   return { bg: '#ffebee', color: '#c62828' };
-  if (diffDays < 14)  return { bg: '#fff3e0', color: '#e65100' };
-  if (diffDays < 30)  return { bg: '#fff9c4', color: '#f57f17' };
-  return { bg: '#e8f5e9', color: '#2e7d32' };
-}
-
-function getDueDateLabel(dueDate: string, t: any): string {
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) return t('dueDate.overdue', { days: Math.abs(diffDays) });
-  if (diffDays === 0) return t('dueDate.today');
-  if (diffDays === 1) return t('dueDate.tomorrow');
-  if (diffDays < 7) return t('dueDate.inDays', { days: diffDays });
-  if (diffDays < 30) return t('dueDate.inWeeks', { weeks: Math.floor(diffDays / 7) });
-  return t('dueDate.inMonths', { months: Math.floor(diffDays / 30) });
-}
 
 export interface TicketDetailCard {
   id: string;
@@ -84,6 +42,7 @@ export interface TicketDetailCard {
   dueDate?: string;
   suffix?: string;
   priority?: string;
+  type?: string;
   listId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -110,6 +69,22 @@ export interface TicketDetailCard {
       name: string;
     };
   }[];
+  releaseTasks?: {
+    id: string;
+    title: string;
+    suffix?: string;
+    priority?: string;
+    listId?: string;
+    user?: {
+      id: string;
+      name: string;
+      profileImage?: string;
+    };
+    list?: {
+      id: string;
+      title: string;
+    };
+  }[];
 }
 
 interface TicketDetailDialogProps {
@@ -126,19 +101,141 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(card?.user || null);
+  const [displayListId, setDisplayListId] = useState(card?.listId || '');
+  const [displayListTitle, setDisplayListTitle] = useState(listTitle || '');
+  const [displayReleaseTasks, setDisplayReleaseTasks] = useState(card?.releaseTasks || []);
   const client = useApolloClient();
   const { t, i18n } = useTranslation();
 
   const [deleteCard, { loading: deleting }] = useMutation(DELETE_CARD_MUTATION);
   const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_MUTATION);
+  const [updateCardList, { loading: updatingList }] = useMutation(UPDATE_CARD_LIST);
+
+  const { data: listsData } = useQuery(GET_BOARD_LISTS, {
+    variables: { boardId },
+    skip: !boardId || !open,
+  });
+
+  const boardLists: { id: string; title: string; position: number }[] =
+    listsData?.boardLists
+      ? [...listsData.boardLists].sort((a: any, b: any) => a.position - b.position)
+      : [];
 
   // Sync displayUser when card prop changes (e.g. dialog re-opened with different card)
   useEffect(() => {
     setDisplayUser(card?.user || null);
   }, [card?.user?.id, card?.id]);
 
+  // Sync displayListId / displayListTitle when card or listTitle prop changes
+  useEffect(() => {
+    setDisplayListId(card?.listId || '');
+    setDisplayListTitle(listTitle || '');
+  }, [card?.listId, card?.id, listTitle]);
+
+  // Sync displayReleaseTasks when card prop changes
+  useEffect(() => {
+    setDisplayReleaseTasks(card?.releaseTasks || []);
+  }, [card?.id, card?.releaseTasks]);
+
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAssignedToMe = displayUser?.id === currentUser?.id;
+
+  const handleListChange = async (newListId: string) => {
+    if (!card || newListId === displayListId) return;
+    try {
+      const { data: updateData } = await updateCardList({
+        variables: { id: card.id, data: { listId: newListId } },
+      });
+      const result = updateData?.updateCard;
+      if (result?.card) {
+        const updatedCard = result.card;
+        const movedReleaseTasks: { id: string; listId: string; position: number; list?: { id: string; title: string } }[] = result.movedReleaseTasks || [];
+
+        // Update local state immediately — no blink
+        setDisplayListId(updatedCard.listId);
+        setDisplayListTitle(updatedCard.list?.title || '');
+
+        // Find target list title for cache updates
+        const targetListObj = boardLists.find((l) => l.id === newListId);
+
+        // Helper to move a card between lists in the cache
+        const moveCardInCache = (cardId: string, oldListId: string | null, targetListId: string, listObj?: { id: string; title: string }) => {
+          if (oldListId) {
+            client.cache.modify({
+              id: client.cache.identify({ __typename: 'ListObject', id: oldListId }),
+              fields: {
+                cards(existingCardRefs: any[] = [], { readField }) {
+                  return existingCardRefs.filter((ref) => readField('id', ref) !== cardId);
+                },
+              },
+            });
+          }
+          client.cache.modify({
+            id: client.cache.identify({ __typename: 'ListObject', id: targetListId }),
+            fields: {
+              cards(existingCardRefs: any[] = [], { toReference, readField }) {
+                const alreadyInList = existingCardRefs.some((ref) => readField('id', ref) === cardId);
+                if (alreadyInList) return existingCardRefs;
+                const cardRef = toReference({ __typename: 'CardObject', id: cardId });
+                return [...existingCardRefs, cardRef];
+              },
+            },
+          });
+          // Update both listId and list object on the card
+          const listData = listObj || (targetListObj ? { __typename: 'ListObject', id: targetListId, title: targetListObj.title } : undefined);
+          client.cache.modify({
+            id: client.cache.identify({ __typename: 'CardObject', id: cardId }),
+            fields: {
+              listId: () => targetListId,
+              ...(listData
+                ? {
+                    list: (_existing: any, { toReference }: any) => {
+                      return toReference({ __typename: 'ListObject', id: targetListId }) || listData;
+                    },
+                  }
+                : {}),
+            },
+          });
+        };
+
+        // Move the main card
+        moveCardInCache(card.id, displayListId, newListId, updatedCard.list);
+
+        // Move all release-linked tasks and update their list info in cache
+        for (const task of movedReleaseTasks) {
+          const cachedTask = client.cache.readFragment<{ listId: string }>({
+            id: client.cache.identify({ __typename: 'CardObject', id: task.id }),
+            fragment: gql`fragment TaskListId on CardObject { listId }`,
+          });
+          const oldListId = cachedTask?.listId || null;
+          if (oldListId !== task.listId) {
+            moveCardInCache(task.id, oldListId, task.listId, task.list);
+          }
+        }
+
+        // Update local displayReleaseTasks so the UI reflects new list titles immediately
+        if (movedReleaseTasks.length > 0) {
+          setDisplayReleaseTasks((prev) => {
+            const movedMap = new Map(movedReleaseTasks.map((t) => [t.id, t]));
+            return prev.map((rt) => {
+              const moved = movedMap.get(rt.id);
+              if (moved) {
+                const newListTitle = moved.list?.title || boardLists.find((l) => l.id === moved.listId)?.title || rt.list?.title;
+                return {
+                  ...rt,
+                  listId: moved.listId,
+                  list: { id: moved.listId, title: newListTitle || '—' },
+                };
+              }
+              return rt;
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error changing list:', err);
+    }
+  };
 
   const handleDelete = async () => {
     if (!card) return;
@@ -211,9 +308,9 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
             {card.title}
           </Typography>
-          {listTitle && (
+          {displayListTitle && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {t('ticketDetail.inList')} <strong>{listTitle}</strong>
+              {t('ticketDetail.inList')} <strong>{displayListTitle}</strong>
             </Typography>
           )}
         </Box>
@@ -252,38 +349,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
               {t('ticketDetail.description')}
             </Typography>
             {card.description ? (
-              <Box
-                sx={{
-                  backgroundColor: 'action.hover',
-                  borderRadius: 1,
-                  p: 2,
-                  mb: 2,
-                  wordBreak:'break-word',
-                  '& p': { m: 0, mb: 1 },
-                  '& p:last-child': { mb: 0 },
-                  '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
-                  '& li': { wordBreak:'break-word' },
-                  '& h1, & h2, & h3': { mt: 1, mb: 0.5 },
-                  '& blockquote': {
-                    borderLeft: '3px solid',
-                    borderColor: 'divider',
-                    pl: 2,
-                    ml: 0,
-                    color: 'text.secondary',
-                  },
-                  '& pre': {
-                    backgroundColor: 'grey.900',
-                    color: 'grey.100',
-                    p: 1.5,
-                    borderRadius: 1,
-                    overflow: 'auto',
-                  },
-                  '& a': { color: 'primary.main' },
-                  fontSize: '0.95rem',
-                  lineHeight: 1.7,
-                }}
-                dangerouslySetInnerHTML={{ __html: card.description }}
-              />
+              <TextEditorUneditable html={card.description}/>
             ) : (
               <Typography variant="body2" color="text.disabled" sx={{ mb: 2, fontStyle: 'italic' }}>
                 {t('ticketDetail.noDescription')}
@@ -331,37 +397,102 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                   {card.children.map((child) => (
-                    <Link
-                      key={child.id}
-                      component={RouterLink}
-                      to={`/task/${child.id}`}
-                      underline="none"
+                   <SubTask child={child} key={child.id} />
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Release Tasks */}
+            {card.type === 'RELEASE' && displayReleaseTasks && displayReleaseTasks.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                  🚀 {t('release.linkedTasks')} ({displayReleaseTasks.length})
+                </Typography>
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Header */}
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '100px 1fr 120px 100px',
+                      gap: 1,
+                      px: 1.5,
+                      py: 1,
+                      bgcolor: 'action.hover',
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('release.colId')}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('release.colName')}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('release.colStatus')}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('release.colExecutor')}
+                    </Typography>
+                  </Box>
+                  {/* Rows */}
+                  {displayReleaseTasks.map((rt) => (
+                    <Box
+                      key={rt.id}
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: 'grid',
+                        gridTemplateColumns: '100px 1fr 120px 100px',
                         gap: 1,
-                        p: 1,
-                        borderRadius: 1,
-                        border: '1px solid',
+                        px: 1.5,
+                        py: 0.75,
+                        borderBottom: '1px solid',
                         borderColor: 'divider',
-                        color: 'inherit',
-                        '&:hover': { backgroundColor: 'action.hover' },
+                        '&:last-child': { borderBottom: 'none' },
+                        alignItems: 'center',
+                        '&:hover': { bgcolor: 'action.hover' },
                       }}
                     >
-                      {child.suffix && (
-                        <Chip label={child.suffix} size="small" color="primary" variant="outlined" sx={{ flexShrink: 0 }} />
-                      )}
-                      <Typography variant="body2" sx={{ fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {child.title}
+                      <Link
+                        component={RouterLink}
+                        to={`/task/${rt.id}`}
+                        underline="hover"
+                        sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        {rt.suffix || rt.id.slice(0, 8)}
+                      </Link>
+                      <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                        {rt.title}
                       </Typography>
-                      {child.priority && (
-                        <Chip
-                          label={child.priority === 'HIGH' ? '🔴' : child.priority === 'MEDIUM' ? '🟠' : '🟢'}
-                          size="small"
-                          sx={{ minWidth: 0, flexShrink: 0 }}
-                        />
-                      )}
-                    </Link>
+                      <Chip
+                        label={rt.list?.title || '—'}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 22, fontSize: '0.7rem' }}
+                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {rt.user ? (
+                          <>
+                            <Avatar
+                              src={rt.user.profileImage ? `http://localhost:3000${rt.user.profileImage}` : undefined}
+                              sx={{ width: 20, height: 20, fontSize: '0.65rem', bgcolor: 'primary.main' }}
+                            >
+                              {!rt.user.profileImage && rt.user.name?.[0]?.toUpperCase()}
+                            </Avatar>
+                            <Typography variant="caption" noWrap>{rt.user.name}</Typography>
+                          </>
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">—</Typography>
+                        )}
+                      </Box>
+                    </Box>
                   ))}
                 </Box>
               </Box>
@@ -369,7 +500,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
 
             {/* Comments */}
             <Divider sx={{ my: 3 }} />
-            <CommentsSection cardId={card.id} />
+            <CommentsSection cardId={card.id} cardDescription={card.description} />
           </Box>
 
           {/* Sidebar */}
@@ -396,11 +527,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                 <DetailField icon={<CalendarToday sx={{ fontSize: 18 }} />} label={t('dueDate.deadline')}>
                   <Box>
                     <Chip
-                      label={new Date(card.dueDate!).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
+                      label={formatDate(i18n.language, card.dueDate, false)}
                       size="small"
                       sx={{
                         backgroundColor: dueDateColors.bg,
@@ -455,32 +582,46 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
               </Button>
             )}
 
+            {/* List / Status selector */}
+            <DetailField icon={<ListIcon sx={{ fontSize: 18 }} />} label={t('task.list')}>
+              {boardLists.length > 0 ? (
+                <FormControl size="small" fullWidth>
+                  <Select
+                    value={displayListId}
+                    onChange={(e) => handleListChange(e.target.value as string)}
+                    disabled={updatingList}
+                    variant="outlined"
+                    sx={{
+                      fontSize: '0.875rem',
+                      '& .MuiSelect-select': { py: 0.75, px: 1.5 },
+                    }}
+                  >
+                    {boardLists.map((list) => (
+                      <MenuItem key={list.id} value={list.id}>
+                        {list.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <Chip label={displayListTitle} size="small" variant="outlined" />
+              )}
+            </DetailField>
+
             <Divider sx={{ my: 2 }} />
 
             {/* Timestamps */}
             {card.createdAt && (
               <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.createdAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatDate(i18n.language, card.createdAt)}
                 </Typography>
               </DetailField>
             )}
             {card.updatedAt && (
               <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.updatedAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatDate(i18n.language, card.updatedAt)}
                 </Typography>
               </DetailField>
             )}
@@ -509,45 +650,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
       />
 
       {/* Delete confirmation dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Warning color="error" />
-          {t('deleteConfirm.deleteTask')}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('deleteConfirm.deleteTaskConfirm')} <strong>"{card.title}"</strong>?
-          </DialogContentText>
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1, color: 'error.dark' }}>
-            <Typography variant="body2">
-              {t('deleteConfirm.deleteTaskWarning')}
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleDelete} variant="contained" color="error" disabled={deleting}>
-            {deleting ? t('common.deleting') : t('deleteConfirm.yesDelete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+    <DeleteCartDialog setDeleteConfirmOpen={setDeleteConfirmOpen} deleting={ deleting} t={t} deleteConfirmOpen={deleteConfirmOpen} handleDelete={handleDelete} card={card}/>
     </Dialog>
   );
 }
-
-function DetailField({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <Box sx={{ mb: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-        {icon}
-        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {label}
-        </Typography>
-      </Box>
-      {children}
-    </Box>
-  );
-}
-

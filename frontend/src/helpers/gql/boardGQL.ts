@@ -11,6 +11,7 @@ export const GET_BOARD = gql`
         id
         title
         position
+        type
         cards {
           id
           title
@@ -20,6 +21,7 @@ export const GET_BOARD = gql`
           dueDate
           suffix
           priority
+          type
           createdAt
           updatedAt
           parentId
@@ -45,6 +47,22 @@ export const GET_BOARD = gql`
               name
             }
           }
+          releaseTasks {
+            id
+            title
+            suffix
+            priority
+            listId
+            user {
+              id
+              name
+              profileImage
+            }
+            list {
+              id
+              title
+            }
+          }
         }
       }
     }
@@ -62,9 +80,20 @@ export const CREATE_LIST_MUTATION = gql`
 export const MOVE_TICKET = gql`
   mutation moveCard($data: MoveCardInput!) {
     moveCard(data: $data) {
-      id
-      listId
-      position
+      card {
+        id
+        listId
+        position
+      }
+      movedReleaseTasks {
+        id
+        listId
+        position
+        list {
+          id
+          title
+        }
+      }
     }
   }
 `;

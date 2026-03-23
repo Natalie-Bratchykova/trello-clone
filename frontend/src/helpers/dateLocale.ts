@@ -10,3 +10,19 @@ export function getDateLocale(lang: string): string {
   }
 }
 
+export function formatDate( lang: string, date = new Date().toString(), isFull = true): string {
+  const locale = getDateLocale(lang);
+  const options: Intl.DateTimeFormatOptions = isFull? {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  } : {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  };
+
+  return new Date(date).toLocaleDateString(locale, options );
+}

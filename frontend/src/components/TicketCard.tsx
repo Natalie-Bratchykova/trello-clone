@@ -1,6 +1,8 @@
 import {Avatar, Box, Chip, Paper, Typography} from "@mui/material";
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
+import {formatDate} from "../helpers/dateLocale.ts";
+import i18n from "i18next";
 
 function getDueDateColors(dueDate: string): { bg: string; color: string } {
     const now = new Date();
@@ -30,6 +32,7 @@ export interface TicketCardProps {
         dueDate?:string;
         suffix?:string;
         priority?:string;
+        type?:string;
         createdAt?:string;
         updatedAt?:string;
         listId?:string;
@@ -38,7 +41,12 @@ export interface TicketCardProps {
             name:string;
             email?:string;
             profileImage?:string;
-        }
+        };
+        releaseTasks?:{
+            id:string;
+            title:string;
+            suffix?:string;
+        }[];
     };
     onClick?: () => void;
 }
@@ -75,9 +83,28 @@ export default function TicketCard({card, onClick}:TicketCardProps) {
                     {card.suffix}
                 </Typography>
             )}
+            {card.type === 'RELEASE' && (
+                <Chip
+                    label="🚀 Release"
+                    size="small"
+                    sx={{
+                        mb: 0.5,
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        bgcolor: '#e3f2fd',
+                        color: '#1565c0',
+                    }}
+                />
+            )}
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {card.title}
             </Typography>
+            {card.type === 'RELEASE' && card.releaseTasks && card.releaseTasks.length > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                    📋 {card.releaseTasks.length} task{card.releaseTasks.length !== 1 ? 's' : ''} linked
+                </Typography>
+            )}
             <Box
                 sx={{
                     display: 'flex',
@@ -117,7 +144,7 @@ export default function TicketCard({card, onClick}:TicketCardProps) {
                                     fontWeight: 600,
                                 }}
                             >
-                                {new Date(dueDate).toLocaleDateString('uk-UA')}
+                                {formatDate(i18n.language, dueDate, false)}
                             </Typography>
                         );
                     })()}

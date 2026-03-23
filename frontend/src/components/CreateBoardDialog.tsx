@@ -14,6 +14,7 @@ import { Close } from '@mui/icons-material';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
+import {formatDate} from "../helpers/dateLocale.ts";
 
 const CREATE_BOARD_MUTATION = gql`
   mutation CreateBoard($title: String!, $color: String!, $userId: ID!, $boardIdentifier: String) {
@@ -272,7 +273,7 @@ export default function CreateBoardDialog({
                 </Typography>
               )}
               <Typography variant="caption" color="text.secondary">
-                {t('board.created')}: {new Date().toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}
+                {t('board.created')}: {formatDate(i18n.language, undefined, false)}
               </Typography>
             </Box>
           </Box>

@@ -16,8 +16,16 @@ import {
   MenuItem,
   Avatar,
   Chip,
+  ToggleButtonGroup,
+  ToggleButton,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, Task, RocketLaunch } from '@mui/icons-material';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
@@ -35,14 +43,15 @@ const GET_USERS_QUERY = gql`
 `;
 
 const CREATE_CARD_MUTATION = gql`
-  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID, $parentId: ID) {
-    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId, parentId: $parentId }) {
+  mutation CreateCard($title: String!, $description: String, $listId: ID!, $dueDate: DateTime, $priority: CardPriority, $userId: ID, $parentId: ID, $type: CardType, $releaseTaskIds: [ID!]) {
+    createCard(data: { title: $title, description: $description, listId: $listId, dueDate: $dueDate, priority: $priority, userId: $userId, parentId: $parentId, type: $type, releaseTaskIds: $releaseTaskIds }) {
       id
       title
       description
       position
       dueDate
       priority
+      type
       suffix
       parentId
       userId
@@ -52,6 +61,11 @@ const CREATE_CARD_MUTATION = gql`
         email
       }
       parent {
+        id
+        title
+        suffix
+      }
+      releaseTasks {
         id
         title
         suffix
@@ -159,6 +173,8 @@ export default function CreateCardDialog({
   const [assignee, setAssignee] = useState<User | null>(null);
   const [parentTask, setParentTask] = useState<ParentCardOption | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
+  const [cardType, setCardType] = useState<'TASK' | 'RELEASE'>('TASK');
+  const [selectedReleaseTaskIds, setSelectedReleaseTaskIds] = useState<string[]>([]);
 
   const { data: usersData, loading: usersLoading } = useQuery<GetUsersData>(GET_USERS_QUERY, {
     skip: !open,
@@ -197,6 +213,8 @@ export default function CreateCardDialog({
     setAssignee(null);
     setParentTask(null);
     setErrors({});
+    setCardType('TASK');
+    setSelectedReleaseTaskIds([]);
     onClose();
   };
 
@@ -234,6 +252,10 @@ export default function CreateCardDialog({
           priority,
           userId: assignee?.id || undefined,
           parentId: parentTask?.id || undefined,
+          type: cardType,
+          releaseTaskIds: cardType === 'RELEASE' && selectedReleaseTaskIds.length > 0
+            ? selectedReleaseTaskIds
+            : undefined,
         },
       });
 
@@ -264,6 +286,28 @@ export default function CreateCardDialog({
 
       <form onSubmit={handleSubmit}>
         <DialogContent>
+          {/* Card Type Toggle */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {t('createCard.cardType')}
+            </Typography>
+            <ToggleButtonGroup
+              value={cardType}
+              exclusive
+              onChange={(_, val) => val && setCardType(val)}
+              size="small"
+              fullWidth
+              disabled={loading}
+            >
+              <ToggleButton value="TASK" sx={{ textTransform: 'none', gap: 0.5 }}>
+                <Task fontSize="small" /> {t('cardType.task')}
+              </ToggleButton>
+              <ToggleButton value="RELEASE" sx={{ textTransform: 'none', gap: 0.5 }}>
+                <RocketLaunch fontSize="small" /> {t('cardType.release')}
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
           <TextField
             autoFocus
             fullWidth
@@ -415,6 +459,70 @@ export default function CreateCardDialog({
                 />
               )}
             />
+          )}
+
+          {/* Release tasks selector — shown only for RELEASE type */}
+          {cardType === 'RELEASE' && boardId && parentCardOptions.length > 0 && (
+            <Box sx={{ mt: 2, mb: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                {t('release.selectTasks')}
+              </Typography>
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  maxHeight: 220,
+                  overflow: 'auto',
+                }}
+              >
+                <List dense disablePadding>
+                  {parentCardOptions.map((card) => {
+                    const isSelected = selectedReleaseTaskIds.includes(card.id);
+                    return (
+                      <ListItem key={card.id} disablePadding>
+                        <ListItemButton
+                          onClick={() => {
+                            setSelectedReleaseTaskIds((prev) =>
+                              isSelected
+                                ? prev.filter((id) => id !== card.id)
+                                : [...prev, card.id],
+                            );
+                          }}
+                          dense
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Checkbox
+                              edge="start"
+                              checked={isSelected}
+                              tabIndex={-1}
+                              disableRipple
+                              size="small"
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                {card.suffix && (
+                                  <Chip label={card.suffix} size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                )}
+                                <Typography variant="body2" noWrap>{card.title}</Typography>
+                              </Box>
+                            }
+                            secondary={card.listTitle}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Box>
+              {selectedReleaseTaskIds.length > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  {t('release.selectedCount', { count: selectedReleaseTaskIds.length })}
+                </Typography>
+              )}
+            </Box>
           )}
 
           <TextField

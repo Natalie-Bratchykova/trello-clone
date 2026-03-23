@@ -113,7 +113,8 @@
     "cardNamePlaceholder": "Наприклад: Зробити дизайн головної сторінки",
     "descriptionOptional": "Опис (опціонально)",
     "descriptionPlaceholder": "Додайте детальний опис...",
-    "createButton": "Створити картку"
+    "createButton": "Створити картку",
+    "cardType": "Тип картки"
   },
   "editCard": {
     "title": "Редагувати картку",
@@ -156,7 +157,8 @@
     "justNow": "щойно",
     "minutesAgo": "{{count}} хв. тому",
     "hoursAgo": "{{count}} год. тому",
-    "daysAgo": "{{count}} дн. тому"
+    "daysAgo": "{{count}} дн. тому",
+    "copyAsChecklist": "Копіювати як чеклист"
   },
   "ticketDetail": {
     "description": "Опис",
@@ -321,6 +323,19 @@
     "uk": "Українська",
     "en": "English",
     "ja": "日本語"
+  },
+  "cardType": {
+    "task": "Задача",
+    "release": "Реліз"
+  },
+  "release": {
+    "selectTasks": "Оберіть задачі для включення в реліз",
+    "selectedCount": "{{count}} задач(а) обрано",
+    "linkedTasks": "Пов'язані задачі",
+    "colId": "ID",
+    "colName": "Назва",
+    "colStatus": "Статус",
+    "colExecutor": "Виконавець"
   }
 }
 

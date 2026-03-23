@@ -53,41 +53,52 @@ const GET_BOARD_CARDS_QUERY = gql`
 const UPDATE_CARD_MUTATION = gql`
   mutation UpdateCard($id: ID!, $data: UpdateCardInput!) {
     updateCard(id: $id, data: $data) {
-      id
-      title
-      description
-      position
-      dueDate
-      priority
-      suffix
-      listId
-      userId
-      parentId
-      createdAt
-      updatedAt
-      user {
-        id
-        name
-        email
-        profileImage
-      }
-      parent {
+      card {
         id
         title
+        description
+        position
+        dueDate
+        priority
         suffix
-      }
-      children {
-        id
-        title
-        suffix
-      }
-      list {
-        id
-        title
-        board {
+        listId
+        userId
+        parentId
+        createdAt
+        updatedAt
+        user {
+          id
+          name
+          email
+          profileImage
+        }
+        parent {
           id
           title
-          color
+          suffix
+        }
+        children {
+          id
+          title
+          suffix
+        }
+        list {
+          id
+          title
+          board {
+            id
+            title
+            color
+          }
+        }
+      }
+      movedReleaseTasks {
+        id
+        listId
+        position
+        list {
+          id
+          title
         }
       }
     }
@@ -114,19 +125,22 @@ interface GetUsersData {
 
 interface UpdateCardData {
   updateCard: {
-    id: string;
-    title: string;
-    description: string;
-    position: number;
-    dueDate: string;
-    priority: string;
-    suffix: string;
-    listId: string;
-    userId: string;
-    parentId: string;
-    createdAt: string;
-    updatedAt: string;
-    user: User;
+    card: {
+      id: string;
+      title: string;
+      description: string;
+      position: number;
+      dueDate: string;
+      priority: string;
+      suffix: string;
+      listId: string;
+      userId: string;
+      parentId: string;
+      createdAt: string;
+      updatedAt: string;
+      user: User;
+    };
+    movedReleaseTasks: { id: string; listId: string; position: number }[];
   };
 }
 

@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 // GraphQL запити
 import {UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
 import {useUserData} from "../hooks/useUserData.ts";
+import {formatDate} from "../helpers/dateLocale.ts";
 
 
 interface ProfilePageProps {
@@ -340,7 +341,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                   <TextField
                       fullWidth
                       label={t('profile.registrationDate')}
-                      value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') : ''}
+                      value={user?.createdAt ? formatDate(i18n.language, user.createdAt, false) : ''}
                       disabled
                       variant="filled"
                   />
@@ -349,7 +350,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                   <TextField
                       fullWidth
                       label={t('profile.lastUpdate')}
-                      value={user?.updatedAt ? new Date(user.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US') : ''}
+                      value={user?.updatedAt ? formatDate(i18n.language, user.updatedAt, false) : ''}
                       disabled
                       variant="filled"
                   />
@@ -430,7 +431,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
                           </ListItemAvatar>
                           <ListItemText
                               primary={board.title}
-                              secondary={`${t('board.created')}: ${new Date(board.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US')}`}
+                              secondary={`${t('board.created')}: ${formatDate(i18n.language, board.createdAt, false)}`}
                           />
                         </ListItem>
                     ))}

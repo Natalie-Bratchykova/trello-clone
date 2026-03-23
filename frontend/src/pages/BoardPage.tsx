@@ -306,62 +306,85 @@ export default function BoardPage() {
   const [moveTicket] = useMutation(MOVE_TICKET, {
     onError: (err) => console.error(err),
     update(cache, { data }) {
-      const movedCard = data?.moveCard;
-      if (!movedCard || !board?.lists) return;
+      const result = data?.moveCard;
+      if (!result || !board?.lists) return;
 
-      const sourceList = board.lists.find((list) => list.cards.some((c) => c.id === movedCard.id));
-      if (!sourceList) return;
+      const movedCard = result.card;
+      const movedReleaseTasks: { id: string; listId: string; position: number; list?: { id: string; title: string } }[] = result.movedReleaseTasks || [];
 
-      const targetListId = movedCard.listId;
+      // Helper to move a single card in the cache
+      const moveCardInCache = (cardId: string, targetListId: string, position: number, listObj?: { id: string; title: string }) => {
+        const sourceList = board.lists.find((list) => list.cards.some((c) => c.id === cardId));
+        if (!sourceList) return;
 
-      cache.modify({
-        id: cache.identify({ __typename: 'ListObject', id: sourceList.id }),
-        fields: {
-          cards(existingCardRefs: any[] = [], { readField }) {
-            return existingCardRefs.filter((ref) => readField('id', ref) !== movedCard.id);
+        // Remove from source list
+        cache.modify({
+          id: cache.identify({ __typename: 'ListObject', id: sourceList.id }),
+          fields: {
+            cards(existingCardRefs: any[] = [], { readField }) {
+              return existingCardRefs.filter((ref) => readField('id', ref) !== cardId);
+            },
           },
-        },
-      });
+        });
 
-      cache.modify({
-        id: cache.identify({ __typename: 'ListObject', id: targetListId }),
-        fields: {
-          cards(existingCardRefs: any[] = [], { readField, toReference }) {
-            const alreadyInList = existingCardRefs.some((ref) => readField('id', ref) === movedCard.id);
-            const cardRef =
-              toReference({ __typename: 'CardObject', id: movedCard.id }) ??
-              cache.writeFragment({
-                data: { __typename: 'CardObject', id: movedCard.id },
-                fragment: gql`
-                  fragment MinimalCard on CardObject {
-                    id
-                  }
-                `,
-              });
+        // Add to target list
+        cache.modify({
+          id: cache.identify({ __typename: 'ListObject', id: targetListId }),
+          fields: {
+            cards(existingCardRefs: any[] = [], { readField, toReference }) {
+              const alreadyInList = existingCardRefs.some((ref) => readField('id', ref) === cardId);
+              const cardRef =
+                toReference({ __typename: 'CardObject', id: cardId }) ??
+                cache.writeFragment({
+                  data: { __typename: 'CardObject', id: cardId },
+                  fragment: gql`
+                    fragment MinimalCard on CardObject {
+                      id
+                    }
+                  `,
+                });
 
-            if (alreadyInList) return existingCardRefs;
+              if (alreadyInList) return existingCardRefs;
 
-            const insertAt = Math.max(0, Math.min(movedCard.position ?? existingCardRefs.length, existingCardRefs.length));
-            return [
-              ...existingCardRefs.slice(0, insertAt),
-              cardRef,
-              ...existingCardRefs.slice(insertAt),
-            ];
+              const insertAt = Math.max(0, Math.min(position ?? existingCardRefs.length, existingCardRefs.length));
+              return [
+                ...existingCardRefs.slice(0, insertAt),
+                cardRef,
+                ...existingCardRefs.slice(insertAt),
+              ];
+            },
           },
-        },
-      });
+        });
 
-      cache.modify({
-        id: cache.identify({ __typename: 'CardObject', id: movedCard.id }),
-        fields: {
-          listId() {
-            return movedCard.listId;
+        // Update the card's own fields including list reference
+        const targetListData = listObj || board.lists.find((l) => l.id === targetListId);
+        cache.modify({
+          id: cache.identify({ __typename: 'CardObject', id: cardId }),
+          fields: {
+            listId() {
+              return targetListId;
+            },
+            position() {
+              return position;
+            },
+            ...(targetListData
+              ? {
+                  list(_existing: any, { toReference }: any) {
+                    return toReference({ __typename: 'ListObject', id: targetListId }) || { __typename: 'ListObject', id: targetListId, title: targetListData.title };
+                  },
+                }
+              : {}),
           },
-          position() {
-            return movedCard.position;
-          },
-        },
-      });
+        });
+      };
+
+      // Move the main card
+      moveCardInCache(movedCard.id, movedCard.listId, movedCard.position);
+
+      // Move all release-linked tasks
+      for (const task of movedReleaseTasks) {
+        moveCardInCache(task.id, task.listId, task.position, task.list);
+      }
     },
   });
 
@@ -376,10 +399,14 @@ export default function BoardPage() {
         variables: { data: { cardId: item.id, targetListId: targetList.id, position } },
         optimisticResponse: {
           moveCard: {
-            __typename: 'CardObject',
-            id: item.id,
-            listId: targetList.id,
-            position,
+            __typename: 'MoveCardResult',
+            card: {
+              __typename: 'CardObject',
+              id: item.id,
+              listId: targetList.id,
+              position,
+            },
+            movedReleaseTasks: [],
           },
         },
       });
@@ -422,10 +449,14 @@ export default function BoardPage() {
             },
             optimisticResponse: {
               moveCard: {
-                __typename: 'CardObject',
-                id: card.id,
-                listId: backlogList.id,
-                position: backlogCardCount + index,
+                __typename: 'MoveCardResult',
+                card: {
+                  __typename: 'CardObject',
+                  id: card.id,
+                  listId: backlogList.id,
+                  position: backlogCardCount + index,
+                },
+                movedReleaseTasks: [],
               },
             },
           }),

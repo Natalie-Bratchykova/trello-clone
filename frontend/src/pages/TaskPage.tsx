@@ -29,138 +29,13 @@ import { ArrowBack, CalendarToday, Person, Flag, AccessTime, List as ListIcon, D
 import CommentsSection from "../components/CommentsSection.tsx";
 import EditCardDialog from "../components/EditCardDialog.tsx";
 import { useTranslation } from 'react-i18next';
+import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/color.ts";
+import {formatDate} from "../helpers/dateLocale.ts";
+import {GET_CARD, GET_BOARD_LISTS, UPDATE_CARD_LIST, DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION} from "../helpers/gql/cardGQL.ts";
+import TextEditorUneditable from "../components/Ticket/TextEditorUneditable.tsx";
 
-const GET_CARD = gql`
-  query GetCard($id: ID!) {
-    card(id: $id) {
-      id
-      title
-      description
-      suffix
-      priority
-      position
-      dueDate
-      createdAt
-      updatedAt
-      listId
-      userId
-      parentId
-      list {
-        id
-        title
-        board {
-          id
-          title
-          color
-        }
-      }
-      user {
-        id
-        name
-        email
-        profileImage
-      }
-      parent {
-        id
-        title
-        suffix
-      }
-      children {
-        id
-        title
-        suffix
-        priority
-        dueDate
-        user {
-          id
-          name
-        }
-      }
-    }
-  }
-`;
 
-const GET_BOARD_LISTS = gql`
-  query GetBoardListsForTask($boardId: ID!) {
-    boardLists(boardId: $boardId) {
-      id
-      title
-      position
-    }
-  }
-`;
 
-const UPDATE_CARD_LIST = gql`
-  mutation UpdateCardList($id: ID!, $data: UpdateCardInput!) {
-    updateCard(id: $id, data: $data) {
-      id
-      listId
-      list {
-        id
-        title
-        board {
-          id
-          title
-          color
-        }
-      }
-    }
-  }
-`;
-
-const DELETE_CARD_MUTATION = gql`
-  mutation DeleteCardFromTask($id: ID!) {
-    deleteCard(id: $id)
-  }
-`;
-
-const ASSIGN_USER_MUTATION = gql`
-  mutation AssignUserFromTask($cardId: ID!, $userId: ID) {
-    assignUser(cardId: $cardId, userId: $userId) {
-      id
-      userId
-      user {
-        id
-        name
-        email
-        profileImage
-      }
-    }
-  }
-`;
-
-const PRIORITY_CONFIG: Record<string, { labelKey: string; color: string; bg: string; icon: string }> = {
-  LOW: { labelKey: 'priority.low', color: '#2e7d32', bg: '#e8f5e9', icon: '🟢' },
-  MEDIUM: { labelKey: 'priority.medium', color: '#e65100', bg: '#fff3e0', icon: '🟠' },
-  HIGH: { labelKey: 'priority.high', color: '#c62828', bg: '#ffebee', icon: '🔴' },
-};
-
-function getDueDateColors(dueDate: string): { bg: string; color: string } {
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-  if (diffDays < 0)   return { bg: '#d32f2f', color: '#fff' };
-  if (diffDays < 5)   return { bg: '#ffebee', color: '#c62828' };
-  if (diffDays < 14)  return { bg: '#fff3e0', color: '#e65100' };
-  if (diffDays < 30)  return { bg: '#fff9c4', color: '#f57f17' };
-  return { bg: '#e8f5e9', color: '#2e7d32' };
-}
-
-function getDueDateLabel(dueDate: string, t: any): string {
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) return t('dueDate.overdue', { days: Math.abs(diffDays) });
-  if (diffDays === 0) return t('dueDate.today');
-  if (diffDays === 1) return t('dueDate.tomorrow');
-  if (diffDays < 7) return t('dueDate.inDays', { days: diffDays });
-  if (diffDays < 30) return t('dueDate.inWeeks', { weeks: Math.floor(diffDays / 7) });
-  return t('dueDate.inMonths', { months: Math.floor(diffDays / 30) });
-}
 
 interface CardData {
   card: {
@@ -280,14 +155,35 @@ export default function TaskPage() {
         client.cache.gc();
       }
       // Update card in cache directly — no refetch needed
-      if (updateData?.updateCard) {
+      const result = updateData?.updateCard;
+      if (result?.card) {
+        const updatedCard = result.card;
+        const movedReleaseTasks: { id: string; listId: string; position: number; list?: { id: string; title: string } }[] = result.movedReleaseTasks || [];
+
         client.cache.modify({
           id: client.cache.identify({ __typename: 'CardObject', id }),
           fields: {
-            listId: () => updateData.updateCard.listId,
-            list: () => updateData.updateCard.list,
+            listId: () => updatedCard.listId,
+            list: () => updatedCard.list,
           },
         });
+
+        // Update cache for all moved release tasks
+        for (const task of movedReleaseTasks) {
+          client.cache.modify({
+            id: client.cache.identify({ __typename: 'CardObject', id: task.id }),
+            fields: {
+              listId: () => task.listId,
+              ...(task.list
+                ? {
+                    list: (_existing: any, { toReference }: any) => {
+                      return toReference({ __typename: 'ListObject', id: task.listId }) || { __typename: 'ListObject', ...task.list };
+                    },
+                  }
+                : {}),
+            },
+          });
+        }
       }
     } catch (err) {
       console.error('Error changing list:', err);
@@ -424,34 +320,7 @@ export default function TaskPage() {
                 {t('ticketDetail.description')}
               </Typography>
               {card.description ? (
-                <Box
-                  sx={{
-                    wordBreak:'break-word',
-                    '& p': { m: 0, mb: 1 },
-                    '& p:last-child': { mb: 0 },
-                    '& ul, & ol': { pl: 3, m: 0, mb: 1, listStylePosition: 'outside' },
-                    '& li': { wordBreak:'break-word' },
-                    '& h1, & h2, & h3': { mt: 1, mb: 0.5 },
-                    '& blockquote': {
-                      borderLeft: '3px solid',
-                      borderColor: 'divider',
-                      pl: 2,
-                      ml: 0,
-                      color: 'text.secondary',
-                    },
-                    '& pre': {
-                      backgroundColor: 'grey.900',
-                      color: 'grey.100',
-                      p: 1.5,
-                      borderRadius: 1,
-                      overflow: 'auto',
-                    },
-                    '& a': { color: 'primary.main' },
-                    fontSize: '1rem',
-                    lineHeight: 1.8,
-                  }}
-                  dangerouslySetInnerHTML={{ __html: card.description }}
-                />
+                <TextEditorUneditable html={card.description}/>
               ) : (
                 <Typography variant="body1" color="text.disabled" sx={{ fontStyle: 'italic' }}>
                   {t('ticketDetail.noDescription')}
@@ -524,7 +393,7 @@ export default function TaskPage() {
                       </Typography>
                       {child.priority && (
                         <Chip
-                          label={child.priority === 'HIGH' ? '🔴' : child.priority === 'MEDIUM' ? '🟠' : '🟢'}
+                          label={definePriorityLabel(child.priority)}
                           size="small"
                           sx={{ minWidth: 0, flexShrink: 0 }}
                         />
@@ -542,7 +411,7 @@ export default function TaskPage() {
 
             {/* Comments */}
             <Paper sx={{ p: 3 }}>
-              <CommentsSection cardId={card.id} />
+              <CommentsSection cardId={card.id} cardDescription={card.description} />
             </Paper>
           </Box>
 
@@ -615,11 +484,7 @@ export default function TaskPage() {
                   <SidebarField icon={<CalendarToday sx={{ fontSize: 18 }} />} label={t('dueDate.deadline')}>
                     <Box>
                       <Chip
-                        label={new Date(card.dueDate!).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
+                        label={formatDate(i18n.language, card.dueDate, false)}
                         size="small"
                         sx={{
                           backgroundColor: dueDateColors.bg,
@@ -682,24 +547,12 @@ export default function TaskPage() {
               {/* Timestamps */}
               <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.createdAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.createdAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatDate(i18n.language, card.createdAt)}
                 </Typography>
               </SidebarField>
               <SidebarField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.updatedAt')}>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(card.updatedAt).toLocaleDateString(i18n.language === 'uk' ? 'uk-UA' : i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatDate(i18n.language, card.updatedAt)}
                 </Typography>
               </SidebarField>
             </Paper>
