@@ -28,93 +28,9 @@ import {
   Close,
 } from '@mui/icons-material';
 
-// ─── GraphQL ───────────────────────────────────────────────
-
-const GET_BOARD_FOR_EDIT = gql`
-  query GetBoardForEdit($id: ID!) {
-    board(id: $id) {
-      id
-      title
-      color
-      boardIdentifier
-      createdAt
-      updatedAt
-      lists {
-        id
-        title
-        position
-      }
-    }
-  }
-`;
-
-const UPDATE_BOARD_MUTATION = gql`
-  mutation UpdateBoard($id: ID!, $data: UpdateBoardInput!) {
-    updateBoard(id: $id, data: $data) {
-      id
-      title
-      color
-      boardIdentifier
-      updatedAt
-    }
-  }
-`;
-
-const UPDATE_LIST_MUTATION = gql`
-  mutation UpdateList($id: ID!, $data: UpdateListInput!) {
-    updateList(id: $id, data: $data) {
-      id
-      title
-      position
-    }
-  }
-`;
-
-const DELETE_LIST_MUTATION = gql`
-  mutation DeleteList($id: ID!) {
-    deleteList(id: $id)
-  }
-`;
-
-const CREATE_LIST_MUTATION = gql`
-  mutation CreateListInEdit($title: String!, $boardId: ID!) {
-    createList(data: { title: $title, boardId: $boardId }) {
-      id
-      title
-      position
-    }
-  }
-`;
-
-const MOVE_LIST_MUTATION = gql`
-  mutation MoveList($data: MoveListInput!) {
-    moveList(data: $data) {
-      id
-      title
-      position
-    }
-  }
-`;
-
-// ─── Types ─────────────────────────────────────────────────
-
-interface ListItem {
-  id: string;
-  title: string;
-  position: number;
-}
-
-interface BoardData {
-  board: {
-    id: string;
-    title: string;
-    color: string;
-    boardIdentifier?: string;
-    createdAt: string;
-    updatedAt: string;
-    lists: ListItem[];
-  };
-}
+import { CREATE_LIST_MUTATION, DELETE_LIST_MUTATION , UPDATE_LIST_MUTATION, MOVE_LIST_MUTATION} from '../helpers/gql/listGQL';
+import { GET_BOARD_FOR_EDIT, UPDATE_BOARD_MUTATION } from '../helpers/gql/boardGQL';
+import type { BoardData, ListItem } from '../helpers/types/listTypes.ts';
 
 // ─── Preset colors ─────────────────────────────────────────
 

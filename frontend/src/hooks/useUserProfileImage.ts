@@ -1,16 +1,8 @@
-import { gql,  } from "@apollo/client";
 import { useState } from "react";
 import {useMutation} from "@apollo/client/react";
 import { useTranslation } from 'react-i18next';
+import { UPLOAD_PROFILE_IMAGE } from "../helpers/gql/userGQL";
 
-const UPLOAD_PROFILE_IMAGE = gql`
-  mutation UploadProfileImage($userId: ID!, $file: Upload!) {
-    uploadProfileImage(userId: $userId, file: $file) {
-      id
-      profileImage
-    }
-  }
-`;
 
 export const useUserProfileImage = (userId: string, refetch: () => void) => {
     const [uploadProfileImage] = useMutation(UPLOAD_PROFILE_IMAGE);

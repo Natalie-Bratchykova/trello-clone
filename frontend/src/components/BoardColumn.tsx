@@ -19,7 +19,6 @@ import {
     Divider,
 } from '@mui/material';
 import { Add, MoreVert, Edit, Delete, Warning, CleaningServices, DeleteForever, Flag } from '@mui/icons-material';
-import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import TicketCard from './TicketCard.tsx';
 import { useDrop } from 'react-dnd';
@@ -27,50 +26,9 @@ import { ItemTypes } from '../helpers/types/ItemTypes.ts';
 import { BULK_DELETE_CARDS_BY_LIST, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
 import { useTranslation } from 'react-i18next';
 import { PRIORITY_OPTIONS } from '../helpers/utils/color.ts';
+import { UPDATE_LIST_MUTATION, DELETE_LIST_MUTATION } from '../helpers/gql/listGQL';
+import type {BoardColumnProps} from "../helpers/types/listTypes.ts";
 
-const UPDATE_LIST_MUTATION = gql`
-  mutation UpdateListTitle($id: ID!, $data: UpdateListInput!) {
-    updateList(id: $id, data: $data) {
-      id
-      title
-    }
-  }
-`;
-
-const DELETE_LIST_MUTATION = gql`
-  mutation DeleteListFromBoard($id: ID!) {
-    deleteList(id: $id)
-  }
-`;
-
-
-export interface BoardColumnProps {
-    list: {
-        id: string;
-        title: string;
-        position: number;
-        cards: {
-            id: number;
-            title: string;
-            description: string;
-            position: number;
-            dueDate: string | null;
-            priority?: string;
-            user: {
-                id: number;
-                name: string;
-            } | null;
-        }[];
-    };
-    lastDroppedCardId?: string | null;
-    onDrop: (item: any) => void;
-    onCardClick?: (card: any, listTitle: string) => void;
-    setCardDialogState: (state: { open: boolean; listId: string; listTitle: string }) => void;
-    onListUpdated?: () => void;
-    externalSortActive?: boolean;
-    isBacklog?: boolean;
-    onClearList?: (listId: string, cards: any[]) => Promise<void>;
-}
 
 export default function BoardColumn({ list, setCardDialogState, lastDroppedCardId, onDrop, onCardClick, onListUpdated, externalSortActive, isBacklog, onClearList }: BoardColumnProps) {
     const { t } = useTranslation();

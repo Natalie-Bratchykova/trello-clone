@@ -49,88 +49,19 @@ import {
 } from '@mui/icons-material';
 import CreateCardDialog from '../components/CreateCardDialog';
 import TicketDetailDialog from '../components/TicketDetailDialog';
-import { GET_BOARD, CREATE_LIST_MUTATION, MOVE_TICKET, DELETE_ALL_LISTS_EXCEPT_BACKLOG, BULK_DELETE_ALL_CARDS_BY_BOARD, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
+import { GET_BOARD, MOVE_TICKET, DELETE_ALL_LISTS_EXCEPT_BACKLOG, BULK_DELETE_ALL_CARDS_BY_BOARD, BULK_DELETE_CARDS_BY_PRIORITY } from '../helpers/gql/boardGQL';
 import BoardColumn from '../components/BoardColumn.tsx';
 import { gql } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
+import type {List, Card, Board} from "../helpers/types/BoardTypes.ts";
+import {CREATE_LIST_MUTATION} from '../helpers/gql/listGQL.ts';
 
-interface Card {
-  id: string;
-  title: string;
-  description?: string;
-  position: number;
-  dueDate?: string;
-  suffix?: string;
-  priority?: string;
-  listId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  parentId?: string;
-  user?: {
-    id: string;
-    name: string;
-    email?: string;
-    profileImage?: string;
-  };
-  parent?: {
-    id: string;
-    title: string;
-    suffix?: string;
-  };
-  children?: {
-    id: string;
-    title: string;
-    suffix?: string;
-    priority?: string;
-    dueDate?: string;
-    user?: {
-      id: string;
-      name: string;
-    };
-  }[];
-}
 
-interface List {
-  id: string;
-  title: string;
-  position: number;
-  cards: Card[];
-}
-
-interface Board {
-  id: string;
-  title: string;
-  color: string;
-  createdAt: string;
-  lists: List[];
-}
-
-type PrioritySortMode = 'low-medium-high' | 'high-medium-low' | 'medium-high-low';
-
-const PRIORITY_SORT_ORDERS: Record<PrioritySortMode, Record<string, number>> = {
-  'low-medium-high': { LOW: 1, MEDIUM: 2, HIGH: 3 },
-  'high-medium-low': { HIGH: 1, MEDIUM: 2, LOW: 3 },
-  'medium-high-low': { MEDIUM: 1, HIGH: 2, LOW: 3 },
-};
-
-const PRIORITY_SORT_LABELS: Record<PrioritySortMode, string> = {
-  'low-medium-high': 'Low → Medium → High',
-  'high-medium-low': 'High → Medium → Low',
-  'medium-high-low': 'Medium → High → Low',
-};
-
-const PRIORITY_SORT_MODES: PrioritySortMode[] = ['low-medium-high', 'high-medium-low', 'medium-high-low'];
-
-type SortField = 'none' | 'priority' | 'createdAt' | 'dueDate';
-type SortDirection = 'asc' | 'desc';
-
-const SORT_OPTIONS: { value: SortField; labelKey: string }[] = [
-  { value: 'none', labelKey: 'sort.none' },
-  { value: 'priority', labelKey: 'sort.byPriority' },
-  { value: 'createdAt', labelKey: 'sort.byCreatedAt' },
-  { value: 'dueDate', labelKey: 'sort.byDueDate' },
-];
+import {PRIORITY_SORT_ORDERS, PRIORITY_SORT_MODES, SORT_OPTIONS} from "../helpers/utils/sortHelper.ts";
+import type { SortDirection, SortField} from '../helpers/utils/sortHelper.ts';
+import FilterItem from "../components/Filter/FilterItem.tsx";
+import FilterSideBar from "../components/Filter/FilterSideBar.tsx";
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
@@ -192,13 +123,6 @@ export default function BoardPage() {
   }, [board]);
 
   // Count cards for current user
-  const myCardCount = useMemo(() => {
-    if (!board?.lists || !currentUser?.id) return 0;
-    return board.lists.reduce(
-      (sum, list) => sum + list.cards.filter((c) => c.user?.id === currentUser.id).length,
-      0,
-    );
-  }, [board, currentUser?.id]);
 
   const totalCardCount = useMemo(() => {
     if (!board?.lists) return 0;
@@ -729,128 +653,22 @@ export default function BoardPage() {
 
       <Box sx={{ display: 'flex', flex: 1 }}>
         {/* Sidebar */}
-        <Paper
-          elevation={0}
-          sx={{
-            width: 240,
-            flexShrink: 0,
-            borderRight: 1,
-            borderColor: 'divider',
-            display: { xs: 'none', md: 'flex' },
-            flexDirection: 'column',
-            overflow: 'auto',
-            maxHeight: 'calc(100vh - 72px)',
-          }}
-        >
-          <Box sx={{ p: 2 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, fontSize: '0.7rem' }}
-            >
-              {t('filters.title')}
-            </Typography>
-            <MuiList disablePadding>
-              <ListItem disablePadding>
-                <ListItemButton
-                  selected={!showOnlyMine}
-                  onClick={() => setShowOnlyMine(false)}
-                  sx={{ borderRadius: 1, py: 0.75 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <ViewColumn sx={{ fontSize: 18 }} />
-                  </ListItemIcon>
-                  <ListItemText primary={t('filters.allTasks')} primaryTypographyProps={{ variant: 'body2', fontWeight: !showOnlyMine ? 600 : 400 }} />
-                  <Chip label={totalCardCount} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton
-                  selected={showOnlyMine}
-                  onClick={() => setShowOnlyMine(true)}
-                  sx={{ borderRadius: 1, py: 0.75 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <FolderSpecial sx={{ fontSize: 18 }} />
-                  </ListItemIcon>
-                  <ListItemText primary={t('filters.myTasks')} primaryTypographyProps={{ variant: 'body2', fontWeight: showOnlyMine ? 600 : 400 }} />
-                  <Chip label={myCardCount} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                </ListItemButton>
-              </ListItem>
-            </MuiList>
-          </Box>
-
-          <Divider />
-
-          {/* Active filters summary in sidebar */}
-          {activeFiltersCount > 0 && (
-            <Box sx={{ p: 2 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, fontSize: '0.7rem' }}
-              >
-                {t('filters.activeFilters')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {showOnlyMine && (
-                  <Chip
-                    label={t('filters.myTasks')}
-                    size="small"
-                    onDelete={() => setShowOnlyMine(false)}
-                    icon={<PersonOutline sx={{ fontSize: 14 }} />}
-                    sx={{ fontSize: '0.75rem' }}
-                  />
-                )}
-                {selectedUsers.map((uid) => {
-                  const u = allBoardUsers.find((x) => x.id === uid);
-                  return u ? (
-                    <Chip
-                      key={uid}
-                      label={u.name}
-                      size="small"
-                      onDelete={() => toggleUser(uid)}
-                      avatar={
-                        <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }} src={u.profileImage ? `http://localhost:3000${u.profileImage}` : undefined}>
-                          {u.name[0]}
-                        </Avatar>
-                      }
-                      sx={{ fontSize: '0.75rem' }}
-                    />
-                  ) : null;
-                })}
-                {selectedPriorities.map((p) => {
-                  const opt = PRIORITY_OPTIONS.find((x) => x[0] === p);
-                  return opt ? (
-                    <Chip key={p} label={`${opt[1].icon} ${opt[1].label}`} size="small" onDelete={() => togglePriority(p)} sx={{ fontSize: '0.75rem' }} />
-                  ) : null;
-                })}
-                {sortBy !== 'none' && (
-                  <Chip
-                    label={`${SORT_OPTIONS.find((o) => o.value === sortBy)?.labelKey ? t(SORT_OPTIONS.find((o) => o.value === sortBy)!.labelKey) : ''} ${sortDirection === 'asc' ? '↑' : '↓'}`}
-                    size="small"
-                    icon={<SwapVert sx={{ fontSize: 14 }} />}
-                    onDelete={() => setSortBy('none')}
-                    sx={{ fontSize: '0.75rem' }}
-                  />
-                )}
-              </Box>
-              <Button size="small" onClick={clearFilters} sx={{ mt: 1, textTransform: 'none', fontSize: '0.75rem' }}>
-                {t('common.clearAll')}
-              </Button>
-            </Box>
-          )}
-
-          {/* Filtered count */}
-          {hasActiveFilters && (
-            <>
-              <Divider />
-              <Box sx={{ p: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('filters.shown')}: <strong>{filteredCardCount}</strong> {t('filters.of')} {totalCardCount} {t('filters.tasks')}
-                </Typography>
-              </Box>
-            </>
-          )}
-        </Paper>
+        <FilterSideBar
+            board={board}
+            hasActiveFilters={hasActiveFilters}
+            showOnlyMine={showOnlyMine}
+            setShowOnlyMine={setShowOnlyMine}
+            currentUser={currentUser}
+            activeFiltersCount={activeFiltersCount}
+            selectedPriorities={selectedPriorities}
+            toggleUser={toggleUser}
+            togglePriority={togglePriority}
+            allBoardUsers={allBoardUsers}
+            sortBy={sortBy}
+            filteredCardCount={filteredCardCount}
+            totalCardCount={totalCardCount}
+            selectedUsers={selectedUsers}
+        />
 
         {/* Main board area */}
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -874,72 +692,45 @@ export default function BoardPage() {
             />
 
             {/* Users filter dropdown */}
-            <Button
-              variant={selectedUsers.length > 0 ? 'contained' : 'outlined'}
-              size="small"
-              startIcon={<Person sx={{ fontSize: 16 }} />}
-              endIcon={
-                selectedUsers.length > 0 ? (
-                  <Chip label={selectedUsers.length} size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: 'rgba(255,255,255,0.3)', color: 'inherit' }} />
-                ) : undefined
-              }
-              onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-              sx={{ textTransform: 'none', fontSize: '0.8rem' }}
-            >
-              {t('filters.assignees')}
-            </Button>
-            <Menu
-              anchorEl={userMenuAnchor}
-              open={Boolean(userMenuAnchor)}
-              onClose={() => setUserMenuAnchor(null)}
-              slotProps={{ paper: { sx: { maxHeight: 320, minWidth: 220 } } }}
-            >
-              {allBoardUsers.length === 0 ? (
-                <MenuItem disabled>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('filters.noAssignees')}
-                  </Typography>
-                </MenuItem>
-              ) : (
-                allBoardUsers.map((u) => (
-                  <MenuItem key={u.id} onClick={() => toggleUser(u.id)} dense>
-                    <Checkbox size="small" checked={selectedUsers.includes(u.id)} sx={{ p: 0, mr: 1 }} />
-                    <Avatar
-                      sx={{ width: 24, height: 24, fontSize: '0.7rem', mr: 1 }}
-                      src={u.profileImage ? `http://localhost:3000${u.profileImage}` : undefined}
-                    >
-                      {u.name?.[0]?.toUpperCase()}
-                    </Avatar>
-                    <ListItemText primary={u.name} primaryTypographyProps={{ variant: 'body2' }} />
-                  </MenuItem>
-                ))
-              )}
-            </Menu>
+            <FilterItem
+                filterTitle={'filters.assignees'}
+                filterSubtitle={'filters.noAssignees'}
+                selectedItems={selectedUsers}
+                setItemAnchor={setUserMenuAnchor}
+                isUserFilter={true}
+                itemAnchor={userMenuAnchor}
+                results={allBoardUsers}
+                toggleState={toggleUser}
+                renderItem={(user) => (
+                    <>
+                      <Avatar
+                          sx={{ width: 24, height: 24, fontSize: '0.7rem', mr: 1 }}
+                          src={user.profileImage ? `http://localhost:3000${user.profileImage}` : undefined}
+                      >
+                        {user.name?.[0]?.toUpperCase()}
+                      </Avatar>
+                      <ListItemText primary={user.name} primaryTypographyProps={{ variant: 'body2' }} />
+                    </>
+                )}
+            />
 
             {/* Priority filter dropdown */}
-            <Button
-              variant={selectedPriorities.length > 0 ? 'contained' : 'outlined'}
-              size="small"
-              startIcon={<Flag sx={{ fontSize: 16 }} />}
-              endIcon={
-                selectedPriorities.length > 0 ? (
-                  <Chip label={selectedPriorities.length} size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: 'rgba(255,255,255,0.3)', color: 'inherit' }} />
-                ) : undefined
-              }
-              onClick={(e) => setPriorityMenuAnchor(e.currentTarget)}
-              sx={{ textTransform: 'none', fontSize: '0.8rem' }}
-            >
-              {t('filters.priorityFilter')}
-            </Button>
-            <Menu anchorEl={priorityMenuAnchor} open={Boolean(priorityMenuAnchor)} onClose={() => setPriorityMenuAnchor(null)}>
-              {PRIORITY_OPTIONS.map((opt) => (
-                <MenuItem key={opt[0]} onClick={() => togglePriority(opt[0])} dense>
-                  <Checkbox size="small" checked={selectedPriorities.includes(opt[0])} sx={{ p: 0, mr: 1 }} />
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: opt.color, mr: 1 }} />
-                  <ListItemText primary={`${opt[1].icon} ${t(opt[1].labelKey)}`} primaryTypographyProps={{ variant: 'body2' }} />
-                </MenuItem>
-              ))}
-            </Menu>
+            <FilterItem
+                filterTitle={'filters.priorityFilter'}
+                filterSubtitle={''}
+                selectedItems={selectedPriorities}
+                setItemAnchor={setPriorityMenuAnchor}
+                isUserFilter={false}
+                itemAnchor={priorityMenuAnchor}
+                results={PRIORITY_OPTIONS}
+                toggleState={togglePriority}
+                renderItem={(opt) => (
+                    <>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: opt.color, mr: 1 }} />
+                      <ListItemText primary={`${opt[1].icon} ${t(opt[1].labelKey)}`} primaryTypographyProps={{ variant: 'body2' }} />
+                    </>
+                )}
+            />
 
             {/* Sort dropdown */}
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />

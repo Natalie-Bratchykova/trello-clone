@@ -38,7 +38,6 @@ export const QUILL_FORMATS = function (isComment = true) {
     if (!isComment) {
          formats.unshift('header');
     }
-    console.log(formats)
         return formats;
 
 }

@@ -68,15 +68,7 @@ export const GET_BOARD = gql`
     }
   }
 `;
-export const CREATE_LIST_MUTATION = gql`
-  mutation CreateList($title: String!, $boardId: ID!) {
-    createList(data: { title: $title, boardId: $boardId }) {
-      id
-      title
-      position
-    }
-  }
-`;
+
 export const MOVE_TICKET = gql`
   mutation moveCard($data: MoveCardInput!) {
     moveCard(data: $data) {
@@ -94,18 +86,6 @@ export const MOVE_TICKET = gql`
           title
         }
       }
-    }
-  }
-`;
-
-export const GET_USER_BOARDS = gql`
-  query GetUserBoards($userId: ID!) {
-    userBoards(userId: $userId) {
-      id
-      title
-      color
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -152,3 +132,32 @@ export const BULK_DELETE_ALL_CARDS_BY_BOARD = gql`
   }
 `;
 
+export const GET_BOARD_FOR_EDIT = gql`
+  query GetBoardForEdit($id: ID!) {
+    board(id: $id) {
+      id
+      title
+      color
+      boardIdentifier
+      createdAt
+      updatedAt
+      lists {
+        id
+        title
+        position
+      }
+    }
+  }
+`;
+
+export const UPDATE_BOARD_MUTATION = gql`
+  mutation UpdateBoard($id: ID!, $data: UpdateBoardInput!) {
+    updateBoard(id: $id, data: $data) {
+      id
+      title
+      color
+      boardIdentifier
+      updatedAt
+    }
+  }
+`;

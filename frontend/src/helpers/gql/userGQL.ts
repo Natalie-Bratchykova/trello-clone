@@ -50,3 +50,12 @@ export const LOGIN_MUTATION = gql`
     }
   }
 `;
+
+export const UPLOAD_PROFILE_IMAGE = gql`
+  mutation UploadProfileImage($userId: ID!, $file: Upload!) {
+    uploadProfileImage(userId: $userId, file: $file) {
+      id
+      profileImage
+    }
+  }
+`;

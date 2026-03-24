@@ -3,8 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  DialogContentText,
   Box,
   Typography,
   IconButton,
@@ -31,71 +29,8 @@ import SubTask from "./Ticket/SubTask.tsx";
 import DetailField from "./Ticket/DetailField.tsx";
 import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
 import DeleteCartDialog from "./Ticket/DeleteCartDialog.tsx";
+import type {TicketDetailDialogProps} from "../helpers/types/cardType.ts";
 
-
-
-export interface TicketDetailCard {
-  id: string;
-  title: string;
-  description?: string;
-  position: number;
-  dueDate?: string;
-  suffix?: string;
-  priority?: string;
-  type?: string;
-  listId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  parentId?: string;
-  user?: {
-    id: string;
-    name: string;
-    email?: string;
-    profileImage?: string;
-  };
-  parent?: {
-    id: string;
-    title: string;
-    suffix?: string;
-  };
-  children?: {
-    id: string;
-    title: string;
-    suffix?: string;
-    priority?: string;
-    dueDate?: string;
-    user?: {
-      id: string;
-      name: string;
-    };
-  }[];
-  releaseTasks?: {
-    id: string;
-    title: string;
-    suffix?: string;
-    priority?: string;
-    listId?: string;
-    user?: {
-      id: string;
-      name: string;
-      profileImage?: string;
-    };
-    list?: {
-      id: string;
-      title: string;
-    };
-  }[];
-}
-
-interface TicketDetailDialogProps {
-  open: boolean;
-  onClose: () => void;
-  card: TicketDetailCard | null;
-  listTitle?: string;
-  boardId?: string;
-  onCardUpdated?: () => void;
-  onCardDeleted?: () => void;
-}
 
 export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
