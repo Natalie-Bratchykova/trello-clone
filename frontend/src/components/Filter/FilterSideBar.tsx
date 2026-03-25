@@ -13,9 +13,30 @@ import {FolderSpecial, PersonOutline, SwapVert, ViewColumn} from "@mui/icons-mat
 import {PRIORITY_OPTIONS} from "../../helpers/utils/color.ts";
 import {SORT_OPTIONS} from "../../helpers/utils/sortHelper.ts";
 import {t} from "i18next";
-import {useMemo, useState} from "react";
+import {useMemo} from "react";
 import FilterSideBarChip from "./FilterSideBarChip.tsx";
-export default function FilterSideBar({board, hasActiveFilters, showOnlyMine, setShowOnlyMine, currentUser, activeFiltersCount, selectedUsers, toggleUser, allBoardUsers, selectedPriorities, togglePriority, sortBy, filteredCardCount, totalCardCount, clearFilters}) {
+import { useBoardFilter } from '../../context/BoardFilterContext.tsx';
+
+export default function FilterSideBar() {
+    const {
+        board,
+        currentUser,
+        hasActiveFilters,
+        showOnlyMine,
+        setShowOnlyMine,
+        activeFiltersCount,
+        selectedUsers,
+        toggleUser,
+        allBoardUsers,
+        selectedPriorities,
+        togglePriority,
+        sortBy,
+        setSortBy,
+        sortDirection,
+        filteredCardCount,
+        totalCardCount,
+        clearFilters,
+    } = useBoardFilter();
 
     const myCardCount = useMemo(() => {
         if (!board?.lists || !currentUser?.id) return 0;

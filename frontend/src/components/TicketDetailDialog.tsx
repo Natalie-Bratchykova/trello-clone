@@ -15,13 +15,13 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, Warning, PersonAdd, List as ListIcon } from '@mui/icons-material';
+import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, PersonAdd, List as ListIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
-import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel} from "../helpers/utils/color.ts";
+import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel} from "../helpers/utils/color.ts";
 import { useTranslation } from 'react-i18next';
 import {DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION, GET_BOARD_LISTS, UPDATE_CARD_LIST} from "../helpers/gql/cardGQL.ts";
 import {formatDate} from "../helpers/utils/dateLocale.ts";
