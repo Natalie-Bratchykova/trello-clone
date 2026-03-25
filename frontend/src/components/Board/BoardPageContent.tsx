@@ -42,6 +42,7 @@ import CreateCardDialog from "../CreateCardDialog.tsx";
 import TicketDetailDialog from "../TicketDetailDialog.tsx";
 import BoardPriorityDeleteDialog from "./BoardPriorityDeleteDialog.tsx";
 import {PRIORITY_OPTIONS} from "../../helpers/utils/color.ts";
+import AddListCard from "./AddListCart.tsx";
 
 
 export default function BoardPageContent({ board, id, refetch }: { board: Board; id: string; refetch: () => void }) {
@@ -251,7 +252,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
     );
 
 
-    // ===== MAIN RENDER =====
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
             {/* Header */}
@@ -424,7 +424,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                             )}
                         </Menu>
 
-                        {/* Clear filters */}
                         {hasActiveFilters && (
                             <Chip
                                 icon={<FilterList sx={{ fontSize: 16 }} />}
@@ -436,8 +435,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                             />
                         )}
                     </Box>
-
-                    {/* Board columns */}
                     <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
                         <Box
                             sx={{
@@ -463,50 +460,7 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                                     />
                                 ))}
 
-                            <Paper
-                                sx={{
-                                    minWidth: 300,
-                                    maxWidth: 300,
-                                    backgroundColor: isAddingList ? 'background.paper' : 'action.hover',
-                                    p: 2,
-                                }}
-                            >
-                                {isAddingList ? (
-                                    <Box>
-                                        <TextField
-                                            fullWidth
-                                            size="small"
-                                            placeholder={t('board.enterListName')}
-                                            value={newListTitle}
-                                            onChange={(e) => setNewListTitle(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') handleCreateList();
-                                            }}
-                                            autoFocus
-                                            disabled={createListLoading}
-                                        />
-                                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                            <Button variant="contained" size="small" onClick={handleCreateList} disabled={createListLoading || !newListTitle.trim()}>
-                                                {t('common.add')}
-                                            </Button>
-                                            <Button
-                                                size="small"
-                                                onClick={() => {
-                                                    setIsAddingList(false);
-                                                    setNewListTitle('');
-                                                }}
-                                                disabled={createListLoading}
-                                            >
-                                                {t('common.cancel')}
-                                            </Button>
-                                        </Box>
-                                    </Box>
-                                ) : (
-                                    <Button fullWidth startIcon={<Add />} onClick={() => setIsAddingList(true)} sx={{ justifyContent: 'flex-start' }}>
-                                        {t('board.addList')}
-                                    </Button>
-                                )}
-                            </Paper>
+                           <AddListCard boardId={id} onListCreated={refetch}/>
                         </Box>
                     </Box>
                 </Box>
@@ -559,7 +513,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                     deleting: 'common.deleting',
                     yesDelete: 'deleteConfirm.yesDelete'}}/>
 
-            {/* Delete By Priority Board-Wide Confirmation Dialog */}
             <BoardPriorityDeleteDialog />
         </Box>
     );
