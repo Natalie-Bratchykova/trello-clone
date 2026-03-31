@@ -277,9 +277,12 @@ export default function EditCardDialog({
             renderOption={({ key, ...props }, option) => (
               <li key={option.id} {...props}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
-                  <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>
-                    {(option.name || option.email).charAt(0).toUpperCase()}
-                  </Avatar>
+                  {option.profileImage ?
+                      <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }} src={option.profileImage? `http://localhost:3000${option.profileImage}`: undefined}/> :
+                      <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>
+                        {(option.name || option.email).charAt(0).toUpperCase()}
+                      </Avatar>
+                  }
                   <Box>
                     <Typography variant="body2">{option.name || t('common.noName')}</Typography>
                     <Typography variant="caption" color="text.secondary">{option.email}</Typography>

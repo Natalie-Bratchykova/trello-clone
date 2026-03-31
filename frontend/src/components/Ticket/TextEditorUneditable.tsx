@@ -1,6 +1,7 @@
 import {Box} from "@mui/material";
 
-export default function TextEditorUneditable({html}: {html: string}) {
+export default function TextEditorUneditable({html}) {
+    console.log('html in uneditable', html)
      return(
     <Box
          sx={{

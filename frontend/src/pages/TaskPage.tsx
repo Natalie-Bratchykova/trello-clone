@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useQuery, useMutation, useApolloClient } from '@apollo/client/react';
 import { gql } from '@apollo/client';
@@ -33,6 +33,7 @@ import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel, definePriorityLabel}
 import {formatDate} from "../helpers/utils/dateLocale.ts";
 import {GET_CARD, GET_BOARD_LISTS, UPDATE_CARD_LIST, DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION} from "../helpers/gql/cardGQL.ts";
 import TextEditorUneditable from "../components/Ticket/TextEditorUneditable.tsx";
+import ReleaseIncludingTask from "../components/Ticket/Release/ReleaseIncludingTasks.tsx";
 
 
 
@@ -234,9 +235,10 @@ export default function TaskPage() {
   }
 
   const card = data.card;
+  const displayReleaseTasks = card?.releaseTasks || [];
   const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
   const boardColor = card.list?.board?.color || '#0079bf';
-
+  console.log('CARD ', card);
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', pb: 4 }}>
       {/* Header */}
@@ -252,9 +254,7 @@ export default function TaskPage() {
                   {card.suffix}
                 </Typography>
               )}
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                {card.title}
-              </Typography>
+
             </Box>
             <Button
               variant="outlined"
@@ -310,6 +310,9 @@ export default function TaskPage() {
             {card.suffix || card.title}
           </Typography>
         </Breadcrumbs>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, pl:1 }}>
+          {card.title}
+        </Typography>
 
         <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
           {/* Main content */}
@@ -327,6 +330,15 @@ export default function TaskPage() {
                 </Typography>
               )}
             </Paper>
+
+
+              {/* Release Tasks */}
+              {card.type === 'RELEASE' && displayReleaseTasks && displayReleaseTasks.length > 0 && (
+                  <Paper sx={{ p: 3, mb: 3 }}>
+                    <ReleaseIncludingTask displayReleaseTasks={displayReleaseTasks}/>
+                  </Paper>
+              )}
+
 
             {/* Parent task */}
             {card.parent && (

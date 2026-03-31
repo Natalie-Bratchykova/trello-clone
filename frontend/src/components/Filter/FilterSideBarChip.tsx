@@ -1,4 +1,5 @@
 import {Avatar, Chip} from "@mui/material";
+import {t} from "i18next";
 
 interface FilterSideBarChipProps {
     options: object[];
@@ -16,19 +17,30 @@ export  default function FilterSideBarChip ({options, filterOptions,toggleState,
                     let itemName = item ? item.name : null;
                     if(!item){
                         item = filterOptions.find((x) => x[0] === identificator);
-                        itemName = item ? item[1].icon + ' ' + item[1].label : null;
+                        itemName = item ? item[1].icon + ' ' + t(item[1].labelKey) : null;
                     }
+
+                    console.log('item name ',itemName)
                     return item ? (
+                        renderItem?
                         <Chip
                             key={identificator}
                             label={itemName || identificator}
                             size="small"
                             onDelete={() => toggleState(identificator)}
                             avatar={
-                                renderItem ? renderItem(item) : undefined
+                                renderItem ? renderItem(item) :'suka'
                             }
                             sx={{ fontSize: '0.75rem' }}
                         />
+                            :
+                            <Chip
+                                key={identificator}
+                                label={itemName || identificator}
+                                size="small"
+                                onDelete={() => toggleState(identificator)}
+                                sx={{ fontSize: '0.75rem' }}
+                            />
                     ) : null;
                 })
             }

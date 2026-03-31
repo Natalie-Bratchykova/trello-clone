@@ -213,7 +213,7 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
                   </Typography>
                 )}
               </Box>
-
+              {console.log(comment)}
               {editingId === comment.id ? (
                 <Box>
                   <Box
@@ -275,7 +275,7 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
                       }}
                     />
                   ) : (
-                    <TextEditorUneditable html={comment.comment}/>
+                    <TextEditorUneditable html={comment.content}/>
                   )}
 
                   {currentUser?.id === comment.userId && (

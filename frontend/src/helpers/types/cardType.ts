@@ -1,8 +1,3 @@
-import {useState} from "react";
-import {useApolloClient, useMutation, useQuery} from "@apollo/client/react";
-import {useTranslation} from "react-i18next";
-import {ASSIGN_USER_MUTATION, DELETE_CARD_MUTATION, GET_BOARD_LISTS, UPDATE_CARD_LIST} from "../gql/cardGQL.ts";
-
 export interface User {
     id: string;
     name: string;

@@ -36,6 +36,7 @@ export const GET_CARD = gql`
     card(id: $id) {
       id
       title
+      type
       description
       suffix
       priority
@@ -77,6 +78,22 @@ export const GET_CARD = gql`
           name
         }
       }
+       releaseTasks {
+            id
+            title
+            suffix
+            priority
+            listId
+            user {
+              id
+              name
+              profileImage
+            }
+            list {
+              id
+              title
+            }
+          }
     }
   }
 `;
@@ -115,6 +132,7 @@ export const GET_USERS_EDIT_QUERY = gql`
       id
       name
       email
+      profileImage
     }
   }
 `;
@@ -197,6 +215,7 @@ export const GET_USERS_QUERY = gql`
       id
       name
       email
+      profileImage
     }
   }
 `;

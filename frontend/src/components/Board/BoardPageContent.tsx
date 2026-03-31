@@ -9,7 +9,7 @@ import {CREATE_LIST_MUTATION} from "../../helpers/gql/listGQL.ts";
 import {MOVE_TICKET} from "../../helpers/gql/boardGQL.ts";
 import {gql} from "@apollo/client";
 import BoardDialog, {BoardDialogTypeEnum} from "./BoardDialog.tsx";
-import {PRIORITY_SORT_LABELS, SORT_OPTIONS} from "../../helpers/utils/sortHelper.ts";
+import {PRIORITY_SORT_LABELS, SORT_OPTIONS, PRIORITY_SORT_MODES, PRIORITY_SORT_ORDERS} from "../../helpers/utils/sortHelper.ts";
 import {
     Avatar,
     Box,
