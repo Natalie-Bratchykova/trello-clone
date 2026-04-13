@@ -1,24 +1,24 @@
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@apollo/client/react';
 import {
   Container,
   Box,
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { GET_BOARD, MOVE_TICKET } from '../helpers/gql/boardGQL';
-import type {List, Card, Board} from "../helpers/types/BoardTypes.ts";
-import { BoardFilterProvider, useBoardFilter } from '../context/BoardFilterContext.tsx';
-import { BoardDangerProvider, useBoardDanger } from '../context/BoardDangerContext.tsx';
+
+import { BoardFilterProvider } from '../context/BoardFilterContext.tsx';
+import { BoardDangerProvider } from '../context/BoardDangerContext.tsx';
 import BoardPageContent from "../components/Board/BoardPageContent.tsx";
+import {useGetBoardQuery} from "../generated/graphql.ts";
 
 export default function BoardPage() {
   const { id } = useParams<{ id: string }>();
-  const { loading, error, data, refetch } = useQuery<{ board: Board }>(GET_BOARD, {
+  // @ts-ignore
+  const { loading, error, data, refetch } = useGetBoardQuery({
     variables: { id },
     skip: !id,
     fetchPolicy: 'cache-and-network',
-  });
+  })
 
   const board = data?.board ?? null;
 

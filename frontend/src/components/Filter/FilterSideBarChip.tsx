@@ -20,7 +20,6 @@ export  default function FilterSideBarChip ({options, filterOptions,toggleState,
                         itemName = item ? item[1].icon + ' ' + t(item[1].labelKey) : null;
                     }
 
-                    console.log('item name ',itemName)
                     return item ? (
                         renderItem?
                         <Chip

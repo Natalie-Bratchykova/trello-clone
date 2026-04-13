@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Box,
   Typography,
@@ -16,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
-import {GET_CARD_COMMENTS, CREATE_COMMENT, UPDATE_COMMENT, DELETE_COMMENT} from "../helpers/gql/commentsGQL.ts";
 import {
   QUILL_MODULES,
   QUILL_FORMATS,
@@ -28,6 +26,12 @@ import {
   formatRelativeTime
 } from "../helpers/utils/textEditorHelper.ts";
 import type {Comment, CommentsSectionProps} from '../helpers/types/commentTypes.ts';
+import {
+  useCreateCommentMutation,
+  useDeleteCommentMutation,
+  useGetCardCommentsLazyQuery,
+  useUpdateCommentMutation
+} from "../generated/graphql.ts";
 
 
 export default function CommentsSection({ cardId, cardDescription }: CommentsSectionProps) {
@@ -38,29 +42,25 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const { data, loading, refetch } = useQuery<{ cardComments: Comment[] }>(GET_CARD_COMMENTS, {
-    variables: { cardId },
-    skip: !cardId,
-  });
+  const { data, loading, refetch } = useGetCardCommentsLazyQuery({ variables: { cardId }, skip: !cardId,});
 
-  const [createComment, { loading: creating }] = useMutation(CREATE_COMMENT, {
-    onCompleted: () => {
-      setNewComment('');
-      refetch();
-    },
-  });
+  const [createComment, { loading: creating }] = useCreateCommentMutation({
+        onCompleted: () => {
+          setNewComment('');
+          refetch();
+        }
+      }
+  )
 
-  const [updateComment] = useMutation(UPDATE_COMMENT, {
+  const [updateComment] = useUpdateCommentMutation({
     onCompleted: () => {
       setEditingId(null);
       setEditContent('');
       refetch();
     },
-  });
+  })
 
-  const [deleteComment] = useMutation(DELETE_COMMENT, {
-    onCompleted: () => refetch(),
-  });
+  const [deleteComment] = useDeleteCommentMutation({ onCompleted: () => refetch()});
 
   const handleSubmit = () => {
     if (isQuillContentEmpty(newComment) || !currentUser?.id) return;
@@ -323,13 +323,7 @@ function parseChecklistItems(html: string): { checked: boolean; text: string }[]
   return items;
 }
 
-function ChecklistRenderer({
-  html,
-  onToggle,
-}: {
-  html: string;
-  onToggle: (index: number, newHtml: string) => void;
-}) {
+function ChecklistRenderer({html, onToggle,}: { html: string; onToggle: (index: number, newHtml: string) => void; }) {
   const [localHtml, setLocalHtml] = useState(html);
 
   // Sync local state when server data (html prop) changes
@@ -414,6 +408,3 @@ function ChecklistRenderer({
     </Box>
   );
 }
-
-
-

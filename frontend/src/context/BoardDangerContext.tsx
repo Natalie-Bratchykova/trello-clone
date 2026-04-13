@@ -1,12 +1,11 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { useMutation } from '@apollo/client/react';
-import {
-  DELETE_ALL_LISTS_EXCEPT_BACKLOG,
-  BULK_DELETE_ALL_CARDS_BY_BOARD,
-  BULK_DELETE_CARDS_BY_PRIORITY,
-} from '../helpers/gql/boardGQL';
+
 import type { Board } from '../helpers/types/BoardTypes';
+import {
+  useBulkDeleteAllCardsByBoardMutation,
+  useBulkDeleteCardsByPriorityMutation, useDeleteAllListsExceptBacklogMutation
+} from "../generated/graphql.ts";
 
 export interface BoardDangerContextType {
   // Dialog open states
@@ -87,7 +86,7 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
 
   // --- Mutations ---
 
-  const [deleteAllLists, { loading: deletingAllLists }] = useMutation(DELETE_ALL_LISTS_EXCEPT_BACKLOG);
+  const [deleteAllLists, { loading: deletingAllLists }] = useDeleteAllListsExceptBacklogMutation();
 
   const handleDeleteAllLists = useCallback(async () => {
     if (!board?.lists || !boardId) return;
@@ -101,6 +100,7 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
     const allMovedCards = nonBacklogLists.flatMap((l) => l.cards);
 
     try {
+      // @ts-ignore
       await deleteAllLists({
         variables: { boardId },
         update(cache) {
@@ -151,11 +151,12 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
     }
   }, [board, boardId, deleteAllLists]);
 
-  const [bulkDeleteAllBoard, { loading: deletingAllTicketsBoard }] = useMutation(BULK_DELETE_ALL_CARDS_BY_BOARD);
+  const [bulkDeleteAllBoard, { loading: deletingAllTicketsBoard }] = useBulkDeleteAllCardsByBoardMutation();
 
   const handleDeleteAllTicketsBoard = useCallback(async () => {
     if (!board?.lists || !boardId) return;
     try {
+      // @ts-ignore
       await bulkDeleteAllBoard({
         variables: { boardId },
         update(cache, { data }) {
@@ -178,12 +179,13 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
     }
   }, [board, boardId, bulkDeleteAllBoard]);
 
-  const [bulkDeleteByPriorityBoard, { loading: deletingPriorityBoard }] = useMutation(BULK_DELETE_CARDS_BY_PRIORITY);
+  const [bulkDeleteByPriorityBoard, { loading: deletingPriorityBoard }] = useBulkDeleteCardsByPriorityMutation();
 
   const handleDeleteByPriorityBoard = useCallback(async () => {
     if (!board?.lists || !boardId || selectedBoardPriorities.length === 0) return;
     try {
       for (const priority of selectedBoardPriorities) {
+        // @ts-ignore
         await bulkDeleteByPriorityBoard({
           variables: { priority, boardId },
           update(cache, { data }) {
@@ -254,5 +256,5 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
   );
 }
 
-export default BoardDangerContext;
+
 

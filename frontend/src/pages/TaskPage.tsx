@@ -237,8 +237,7 @@ export default function TaskPage() {
   const card = data.card;
   const displayReleaseTasks = card?.releaseTasks || [];
   const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
-  const boardColor = card.list?.board?.color || '#0079bf';
-  console.log('CARD ', card);
+  const boardColor = card.list?.board?.color || '#0079bf';;
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', pb: 4 }}>
       {/* Header */}

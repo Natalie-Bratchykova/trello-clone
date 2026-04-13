@@ -9,7 +9,7 @@ import {CREATE_LIST_MUTATION} from "../../helpers/gql/listGQL.ts";
 import {MOVE_TICKET} from "../../helpers/gql/boardGQL.ts";
 import {gql} from "@apollo/client";
 import BoardDialog, {BoardDialogTypeEnum} from "./BoardDialog.tsx";
-import {PRIORITY_SORT_LABELS, SORT_OPTIONS, PRIORITY_SORT_MODES, PRIORITY_SORT_ORDERS} from "../../helpers/utils/sortHelper.ts";
+import {PRIORITY_SORT_LABELS, SORT_OPTIONS, PRIORITY_SORT_MODES} from "../../helpers/utils/sortHelper.ts";
 import {
     Avatar,
     Box,
@@ -24,7 +24,6 @@ import {
     Typography,
 } from '@mui/material';
 import {
-    Add,
     ArrowBack,
     ArrowDownward,
     ArrowUpward,
@@ -37,8 +36,8 @@ import {
 import BoardDangerMenu from "./BoardDangerMenu.tsx";
 import FilterSideBar from "../Filter/FilterSideBar.tsx";
 import FilterItem from "../Filter/FilterItem.tsx";
-import BoardColumn from "../BoardColumn.tsx";
-import CreateCardDialog from "../CreateCardDialog.tsx";
+import BoardColumn from "./Logic/BoardColumn.tsx";
+import CreateCardDialog from "../Ticket/Logic/CreateCardDialog.tsx";
 import TicketDetailDialog from "../TicketDetailDialog.tsx";
 import BoardPriorityDeleteDialog from "./BoardPriorityDeleteDialog.tsx";
 import {PRIORITY_OPTIONS} from "../../helpers/utils/color.ts";

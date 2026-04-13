@@ -1,11 +1,20 @@
 import {gql} from "@apollo/client";
 
 export const UPDATE_LIST_MUTATION = gql`
-  mutation UpdateListTitle($id: ID!, $data: UpdateListInput!) {
+  mutation UpdateListTitleAndPosition($id: ID!, $data: UpdateListInput!) {
     updateList(id: $id, data: $data) {
       id
       title
       position
+    }
+  }
+`;
+
+export const UPDATE_LIST_MUTATION_SMALL = gql`
+  mutation UpdateListTitle($id: ID!, $data: UpdateListInput!) {
+    updateList(id: $id, data: $data) {
+      id
+      title
     }
   }
 `;
