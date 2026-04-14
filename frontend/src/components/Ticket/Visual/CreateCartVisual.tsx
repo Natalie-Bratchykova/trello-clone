@@ -14,6 +14,7 @@ import ReactQuill from "react-quill-new";
 import {QUILL_FORMATS, QUILL_MODULES} from "../../../helpers/utils/textEditorHelper.ts";
 import {PRIORITY_OPTIONS} from "../../../helpers/utils/color.ts";
 import {useTranslation} from "react-i18next";
+import ReleaseTasksSelector from "../Release/ReleaseTasksSelector.tsx";
 
 interface User {
     id: string;
@@ -56,6 +57,10 @@ export default  function CreateCartVisual(props){
         dueDate,
         setDueDate
     } = props;
+
+    const releaseTaskSelectorProps = {parentCardOptions,
+        selectedReleaseTaskIds,
+        setSelectedReleaseTaskIds}
     return( <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -253,66 +258,7 @@ export default  function CreateCartVisual(props){
 
                     {/* Release tasks selector — shown only for RELEASE type */}
                     {cardType === 'RELEASE' && boardId && parentCardOptions.length > 0 && (
-                        <Box sx={{ mt: 2, mb: 1 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                {t('release.selectTasks')}
-                            </Typography>
-                            <Box
-                                sx={{
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    borderRadius: 1,
-                                    maxHeight: 220,
-                                    overflow: 'auto',
-                                }}
-                            >
-                                <List dense disablePadding>
-                                    {parentCardOptions.map((card) => {
-                                        const isSelected = selectedReleaseTaskIds.includes(card.id);
-                                        return (
-                                            <ListItem key={card.id} disablePadding>
-                                                <ListItemButton
-                                                    onClick={() => {
-                                                        setSelectedReleaseTaskIds((prev) =>
-                                                            isSelected
-                                                                ? prev.filter((id) => id !== card.id)
-                                                                : [...prev, card.id],
-                                                        );
-                                                    }}
-                                                    dense
-                                                >
-                                                    <ListItemIcon sx={{ minWidth: 36 }}>
-                                                        <Checkbox
-                                                            edge="start"
-                                                            checked={isSelected}
-                                                            tabIndex={-1}
-                                                            disableRipple
-                                                            size="small"
-                                                        />
-                                                    </ListItemIcon>
-                                                    <ListItemText
-                                                        primary={
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                {card.suffix && (
-                                                                    <Chip label={card.suffix} size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                                                                )}
-                                                                <Typography variant="body2" noWrap>{card.title}</Typography>
-                                                            </Box>
-                                                        }
-                                                        secondary={card.listTitle}
-                                                    />
-                                                </ListItemButton>
-                                            </ListItem>
-                                        );
-                                    })}
-                                </List>
-                            </Box>
-                            {selectedReleaseTaskIds.length > 0 && (
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                    {t('release.selectedCount', { count: selectedReleaseTaskIds.length })}
-                                </Typography>
-                            )}
-                        </Box>
+                       <ReleaseTasksSelector {...releaseTaskSelectorProps} />
                     )}
 
                     <TextField

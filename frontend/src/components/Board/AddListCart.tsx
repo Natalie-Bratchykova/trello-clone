@@ -1,4 +1,4 @@
-// components/Board/AddListCard.tsx
+
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +30,7 @@ export default function AddListCard({ boardId, onListCreated }: AddListCardProps
     };
 
     return (
-        <Paper sx={{ minWidth: 300, maxWidth: 300, backgroundColor: isAdding ? 'background.paper' : 'action.hover', p: 2 }}>
+        <Paper sx={{ minWidth: 300, maxWidth: 300, maxHeight: 'calc(100vh - 250px)', backgroundColor: isAdding ? 'background.paper' : 'action.hover', p: 2 }}>
             {isAdding ? (
                 <Box>
                     <TextField

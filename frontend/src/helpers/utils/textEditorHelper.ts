@@ -1,13 +1,24 @@
 import {formatDate} from "./dateLocale.ts";
-// export const COMMENT_QUILL_MODULES = {
-//     toolbar: [
-//         ['bold', 'italic', 'underline', 'strike'],
-//         [{ list: 'ordered' }, { list: 'bullet' }],
-//         ['blockquote', 'code-block'],
-//         ['link'],
-//         ['clean'],
-//     ],
-// };
+
+export const  parseChecklistItems  = function (html: string): { checked: boolean; text: string }[]{
+    const states = getCheckStates(html);
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const textContent = div.textContent || '';
+    const items: { checked: boolean; text: string }[] = [];
+
+    const regex = /[☐☑]\s*(.*?)(?=[☐☑]|$)/gs;
+    let m;
+    let idx = 0;
+    while ((m = regex.exec(textContent)) !== null) {
+        items.push({
+            checked: states[idx] ?? false,
+            text: m[1].trim(),
+        });
+        idx++;
+    }
+    return items;
+}
 
 export const QUILL_MODULES = function(isComment = true) {
     let toolbars = {
