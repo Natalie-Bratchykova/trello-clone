@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useDeferredValue } from 'react';
 import type { ReactNode } from 'react';
 import type { Board, Card, List } from '../helpers/types/BoardTypes';
 import type { SortDirection, SortField, PrioritySortMode } from '../helpers/utils/sortHelper';
 import { PRIORITY_SORT_ORDERS } from '../helpers/utils/sortHelper';
+import { useUserContext } from './UserContext';
 
 export interface BoardUser {
   id: string;
@@ -66,10 +67,11 @@ interface BoardFilterProviderProps {
 }
 
 export function BoardFilterProvider({ board, children }: BoardFilterProviderProps) {
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user: currentUser } = useUserContext();
 
   // Search
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredQuery = useDeferredValue(searchQuery);
 
   // Filters
   const [showOnlyMine, setShowOnlyMine] = useState(false);
@@ -100,7 +102,7 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
     return board.lists.reduce((sum, list) => sum + list.cards.length, 0);
   }, [board]);
 
-  const hasActiveFilters = searchQuery.trim() !== '' || showOnlyMine || selectedUsers.length > 0 || selectedPriorities.length > 0 || sortBy !== 'none';
+  const hasActiveFilters = deferredQuery.trim() !== '' || showOnlyMine || selectedUsers.length > 0 || selectedPriorities.length > 0 || sortBy !== 'none';
 
   const activeFiltersCount = selectedUsers.length + selectedPriorities.length + (showOnlyMine ? 1 : 0) + (sortBy !== 'none' ? 1 : 0);
 
@@ -126,8 +128,8 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
       if (showOnlyMine && currentUser?.id && card.user?.id !== currentUser.id) return false;
       if (selectedUsers.length > 0 && (!card.user || !selectedUsers.includes(card.user.id))) return false;
       if (selectedPriorities.length > 0 && (!card.priority || !selectedPriorities.includes(card.priority))) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredQuery.trim()) {
+        const q = deferredQuery.toLowerCase();
         const matchTitle = card.title.toLowerCase().includes(q);
         const matchSuffix = (card.suffix || '').toLowerCase().includes(q);
         const matchDesc = (card.description || '').toLowerCase().includes(q);
@@ -135,7 +137,7 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
       }
       return true;
     },
-    [showOnlyMine, currentUser?.id, selectedUsers, selectedPriorities, searchQuery],
+    [showOnlyMine, currentUser?.id, selectedUsers, selectedPriorities, deferredQuery],
   );
 
   const sortCards = useCallback(
@@ -172,7 +174,7 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
 
   const filteredLists = useMemo(() => {
     if (!board?.lists) return [];
-    const needsFilter = searchQuery.trim() !== '' || showOnlyMine || selectedUsers.length > 0 || selectedPriorities.length > 0;
+    const needsFilter = deferredQuery.trim() !== '' || showOnlyMine || selectedUsers.length > 0 || selectedPriorities.length > 0;
     const needsSort = sortBy !== 'none';
     if (!needsFilter && !needsSort) return board.lists;
     return board.lists.map((list) => {
@@ -180,7 +182,7 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
       if (needsSort) cards = sortCards(cards);
       return { ...list, cards };
     });
-  }, [board, filterCard, sortCards, searchQuery, showOnlyMine, selectedUsers, selectedPriorities, sortBy, sortDirection, prioritySortMode]);
+  }, [board, filterCard, sortCards, deferredQuery, showOnlyMine, selectedUsers, selectedPriorities, sortBy, sortDirection, prioritySortMode]);
 
   const filteredCardCount = useMemo(() => {
     return filteredLists.reduce((sum, list) => sum + list.cards.length, 0);
@@ -218,7 +220,7 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
       board, currentUser, searchQuery, showOnlyMine, selectedUsers, selectedPriorities,
       sortBy, sortDirection, prioritySortMode, allBoardUsers, hasActiveFilters,
       activeFiltersCount, totalCardCount, filteredCardCount, filteredLists,
-      clearFilters, filterCard, sortCards, toggleUser, togglePriority,
+      clearFilters, filterCard, sortCards, toggleUser, togglePriority, deferredQuery,
     ],
   );
 

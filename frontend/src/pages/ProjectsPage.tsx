@@ -18,6 +18,7 @@ import CreateBoardDialog from '../components/CreateBoardDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 
 import { GET_ALL_BOARDS, DELETE_BOARD_MUTATION } from '../helpers/gql/boardGQL.ts';
+import { useUserContext } from '../context/UserContext';
 
 interface Board {
   id: string;
@@ -29,14 +30,9 @@ interface Board {
   cardsCount?: number;
 }
 
-interface ProjectsPageProps {
-  isAuthenticated: boolean;
-  userId?: string;
-  onLogin: () => void;
-}
-
-export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPageProps) {
+export default function ProjectsPage() {
   const { t } = useTranslation();
+  const { isAuthenticated, user } = useUserContext();
   const [boards, setBoards] = useState<Board[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteDialogState, setDeleteDialogState] = useState<{
@@ -222,14 +218,12 @@ export default function ProjectsPage({ isAuthenticated, userId }: ProjectsPagePr
         </Fab>
       )}
 
-      {userId && (
-        <CreateBoardDialog
-          open={isCreateDialogOpen}
-          onClose={() => setIsCreateDialogOpen(false)}
-          userId={userId}
-          onBoardCreated={handleBoardCreated}
-        />
-      )}
+      <CreateBoardDialog
+        open={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        userId={user?.id}
+        onBoardCreated={handleBoardCreated}
+      />
 
       <ConfirmDeleteDialog
         open={deleteDialogState.open}

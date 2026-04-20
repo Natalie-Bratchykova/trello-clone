@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { UPLOAD_PROFILE_IMAGE } from "../helpers/gql/userGQL";
 
 
-export const useUserProfileImage = (userId: string, refetch: () => void) => {
+export const useUserProfileImageUpload = (userId: string, refetch: () => void) => {
     const [uploadProfileImage] = useMutation(UPLOAD_PROFILE_IMAGE);
     const { t } = useTranslation();
 

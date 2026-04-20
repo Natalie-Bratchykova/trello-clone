@@ -12,6 +12,7 @@ import {
   useUpdateCommentMutation
 } from "../generated/graphql.ts";
 import CommentsSectionVisual from "./CommentSection/Visual/CommentsSectionVisual.tsx";
+import { useUserContext } from '../context/UserContext';
 
 
 export default function CommentsSection({ cardId, cardDescription }: CommentsSectionProps) {
@@ -19,7 +20,7 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user: currentUser } = useUserContext();
 
   const { data, loading, refetch } = useGetCardCommentsLazyQuery({ variables: { cardId }, skip: !cardId,});
 
@@ -65,6 +66,17 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
     });
   };
 
+  const handleChecklistToggle = (id: string, updatedHtml: string) => {
+    if (isQuillContentEmpty(updatedHtml)) return;
+    updateComment({
+      variables: {
+        id,
+        data: { content: updatedHtml },
+        userId: currentUser.id,
+      },
+    });
+  };
+
   const handleDelete = (id: string) => {
     deleteComment({
       variables: { id, userId: currentUser.id },
@@ -91,6 +103,7 @@ export default function CommentsSection({ cardId, cardDescription }: CommentsSec
     editContent,
     setEditContent,
     handleUpdate,
+    handleChecklistToggle,
     startEdit,
     handleDelete};
 

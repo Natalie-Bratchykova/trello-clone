@@ -21,7 +21,11 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemAvatar, Select, FormControl, InputLabel, MenuItem,
+  ListItemAvatar,
+  Select,
+  FormControl,
+  InputLabel,
+  MenuItem,
 } from '@mui/material';
 import {
   Edit,
@@ -33,76 +37,65 @@ import {
   Folder,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useUserProfileImage } from '../hooks/useUserProfileImage';
+import { useUserProfileImageUpload } from '../hooks/useUserProfileImage';
 import { useTranslation } from 'react-i18next';
-// GraphQL запити
-import {UPDATE_USER, GET_ALL_ROLES} from "../helpers/gql/userGQL.ts";
-import {useUserData} from "../hooks/useUserData.ts";
-import {formatDate} from "../helpers/utils/dateLocale.ts";
+import { UPDATE_USER, GET_ALL_ROLES } from '../helpers/gql/userGQL.ts';
+import { useUserDataFull } from '../hooks/useUserData.ts';
+import { formatDate } from '../helpers/utils/dateLocale.ts';
+import { getUserProfileUrl } from '../helpers/utils/userHelper.ts';
+import { useUserContext } from '../context/UserContext';
 
-
-interface ProfilePageProps {
-  userId: string;
-  userName: string;
-  userEmail: string;
-}
-
-export default function ProfilePage({userId, userName, userEmail, userRoleId}: ProfilePageProps) {
+export default function ProfilePage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { user: currentUser, updateUser } = useUserContext();
 
+  const userId = currentUser?.id || '';
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(userName);
-  const [editedEmail, setEditedEmail] = useState(userEmail);
-
-  const [roleId, SetRoleId] = useState(userRoleId);
+  const [editedName, setEditedName] = useState(currentUser?.name || '');
+  const [editedEmail, setEditedEmail] = useState(currentUser?.email || '');
+  const [roleId, SetRoleId] = useState(currentUser?.roleId ?? 0);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const {handleImageUpload} = useUserProfileImage(userId, () => refetch());
+
+  const { data, loading, error, refetch } = useUserDataFull(userId, !userId);
+  const { handleImageUpload } = useUserProfileImageUpload(userId, () => refetch());
+
+  const { data: roles } = useQuery(GET_ALL_ROLES) as any;
+  const [updateUserMutation, { loading: updateLoading }] = useMutation(UPDATE_USER) as any;
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error';
-  }>({open: false, message: '', severity: 'success'});
-
-
-  const {data, loading, error, refetch} = useUserData(userId);
-
-  const {data:roles} = useQuery(GET_ALL_ROLES) as any;
-  const [updateUser, {loading: updateLoading}] = useMutation(UPDATE_USER) as any;
+  }>({ open: false, message: '', severity: 'success' });
 
   const handleEditToggle = () => {
     if (isEditing) {
-      setEditedName(data?.user?.name || userName);
-      setEditedEmail(data?.user?.email || userEmail);
+      setEditedName(data?.user?.name || currentUser?.name || '');
+      setEditedEmail(data?.user?.email || currentUser?.email || '');
+      SetRoleId(data?.user?.roleId ?? currentUser?.roleId ?? 0);
     }
     setIsEditing(!isEditing);
   };
 
   const handleSave = async () => {
+    if (!userId) return;
     try {
-      await updateUser({
+      await updateUserMutation({
         variables: {
           id: userId,
           data: {
             name: editedName,
             email: editedEmail,
-            roleId: parseFloat((roleId).toString()),
+            roleId: parseFloat(roleId.toString()),
           },
         },
       });
 
-
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        user.name = editedName;
-        user.email = editedEmail;
-        localStorage.setItem('user', JSON.stringify(user));
-      }
+      updateUser({ name: editedName, email: editedEmail, roleId: Number(roleId) });
 
       setSnackbar({
         open: true,
@@ -122,6 +115,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
   };
 
   const handlePasswordChange = async () => {
+    if (!userId) return;
     if (!currentPassword || !newPassword || !confirmPassword) {
       setSnackbar({
         open: true,
@@ -150,7 +144,7 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
     }
 
     try {
-      await updateUser({
+      await updateUserMutation({
         variables: {
           id: userId,
           data: {
@@ -180,333 +174,336 @@ export default function ProfilePage({userId, userName, userEmail, userRoleId}: P
 
   if (loading) {
     return (
-        <Container maxWidth="lg" sx={{mt: 4, mb: 4}}>
-          <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh'}}>
-            <CircularProgress/>
-          </Box>
-        </Container>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
   if (error) {
     return (
-        <Container maxWidth="lg" sx={{mt: 4, mb: 4}}>
-          <Alert severity="error">{t('profile.loadError')}: {error.message}</Alert>
-        </Container>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error">{t('profile.loadError')}: {error.message}</Alert>
+      </Container>
     );
   }
 
   const user = data?.user;
   const boards = data?.userBoards || [];
-  // TODO START: refactor usage of user data to avoid code duplication and extra queries
-  const profileImageUrl = user?.profileImage
-      ? `http://localhost:3000${user.profileImage}`
-      : undefined;
-// TODO END
+  const profileImageUrl = getUserProfileUrl(user?.profileImage);
+
   return (
-      <Container maxWidth="lg" sx={{mt: 4, mb: 4}}>
-        <Grid container spacing={3}>
-          {/* Ліва колонка - Основна інформація */}
-          <Grid item size={{xs:12, md:4}}>
-            <Paper sx={{p: 3, textAlign: 'center'}}>
-              {/* Аватар */}
-              <Box sx={{position: 'relative', display: 'inline-block', mb: 2}}>
-                <Avatar
-                    src={profileImageUrl}
-                    sx={{
-                      width: 150,
-                      height: 150,
-                      fontSize: '3rem',
-                      bgcolor: 'primary.main',
-                    }}
-                >
-                  {!profileImageUrl && (user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase())}
-                </Avatar>
-
-                {/* Кнопка завантаження фото */}
-                <IconButton
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      bgcolor: 'background.paper',
-                      boxShadow: 2,
-                      '&:hover': {bgcolor: 'grey.200'},
-                    }}
-                    component="label"
-                >
-                  <PhotoCamera/>
-                  <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                  />
-                </IconButton>
-              </Box>
-
-              {/* Ім'я та email */}
-              <Typography variant="h5" gutterBottom>
-                {user?.name || t('common.noName')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {user?.email}
-              </Typography>
-
-              <Divider sx={{my: 2}}/>
-
-              {/* Статистика */}
-              <Box sx={{display: 'flex', justifyContent: 'space-around', mb: 2}}>
-                <Box>
-                  <Typography variant="h6">{boards.length}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('profile.projects')}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Кнопка зміни паролю */}
-              <Button
-                  variant="outlined"
-                  startIcon={<Lock/>}
-                  fullWidth
-                  onClick={() => setPasswordDialogOpen(true)}
-                  sx={{mt: 2}}
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Grid container spacing={3}>
+        {/* Ліва колонка - Основна інформація */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3, textAlign: 'center' }}>
+            {/* Аватар */}
+            <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+              <Avatar
+                src={profileImageUrl}
+                sx={{
+                  width: 150,
+                  height: 150,
+                  fontSize: '3rem',
+                  bgcolor: 'primary.main',
+                }}
               >
-                {t('profile.changePassword')}
-              </Button>
-            </Paper>
-          </Grid>
+                {!profileImageUrl && (user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase())}
+              </Avatar>
 
-          {/* Права колонка - Деталі профілю та проекти */}
-          <Grid item size={{xs:12, md:8}}>
-            {/* Інформація профілю */}
-            <Paper sx={{p: 3, mb: 3}}>
-              <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
-                <Typography variant="h6">
-                  {t('profile.title')}
-                </Typography>
-                {!isEditing ? (
-                    <Button
-                        variant="contained"
-                        startIcon={<Edit/>}
-                        onClick={handleEditToggle}
-                        disabled={updateLoading}
-                    >
-                      {t('common.edit')}
-                    </Button>
-                ) : (
-                    <Button
-                        variant="outlined"
-                        startIcon={<Cancel/>}
-                        onClick={handleEditToggle}
-                        disabled={updateLoading}
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                )}
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                      fullWidth
-                      label={t('auth.nameLabel')}
-                      value={isEditing ? editedName : user?.name || ''}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      disabled={!isEditing}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                      fullWidth
-                      label={t('auth.emailLabel')}
-                      value={isEditing ? editedEmail : user?.email || ''}
-                      onChange={(e) => setEditedEmail(e.target.value)}
-                      disabled={!isEditing}
-                      type="email"
-                  />
-                </Grid>
-                <Grid item  xs={12}>
-                  <FormControl sx={{ minWidth: 120 }}>
-                    <InputLabel>{t('profile.role')}</InputLabel>
-                    <Select label={t('profile.role')} value={user.roleId|| roleId} onChange={(e) => SetRoleId(e.target.value)} disabled={!isEditing} variant={userRoleId}>
-                      {roles?.roles?.map(role => {
-                        return (<MenuItem key={role.id} value={role.id} selected={Number(role.id) === Number(userRoleId)}>{role.name}</MenuItem>)
-                      })}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                      fullWidth
-                      label={t('profile.registrationDate')}
-                      value={user?.createdAt ? formatDate(i18n.language, user.createdAt, false) : ''}
-                      disabled
-                      variant="filled"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                      fullWidth
-                      label={t('profile.lastUpdate')}
-                      value={user?.updatedAt ? formatDate(i18n.language, user.updatedAt, false) : ''}
-                      disabled
-                      variant="filled"
-                  />
-                </Grid>
-              </Grid>
-
-              {isEditing && (
-                  <Box sx={{mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2}}>
-                    <Button
-                        variant="contained"
-                        startIcon={<Save/>}
-                        onClick={handleSave}
-                        disabled={updateLoading}
-                    >
-                      {t('profile.saveChanges')}
-                    </Button>
-                  </Box>
-              )}
-            </Paper>
-
-            {/* Проекти (Дошки) */}
-            <Paper sx={{p: 3}}>
-              <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
-                <Typography variant="h6">
-                  <DashboardIcon sx={{verticalAlign: 'middle', mr: 1}}/>
-                  {t('profile.myProjects')} ({boards.length})
-                </Typography>
-                <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => navigate('/projects')}
-                >
-                  {t('common.viewAll')}
-                </Button>
-              </Box>
-
-              {boards.length === 0 ? (
-                  <Box sx={{textAlign: 'center', py: 4}}>
-                    <Typography color="text.secondary">
-                      {t('profile.noProjects')}
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        sx={{mt: 2}}
-                        onClick={() => navigate('/projects')}
-                    >
-                      {t('profile.createFirst')}
-                    </Button>
-                  </Box>
-              ) : (
-                  <List>
-                    {boards.slice(0, 5).map((board: any) => (
-                        <ListItem
-                            key={board.id}
-                            button
-                            onClick={() => navigate(`/board/${board.id}`)}
-                            sx={{
-                              border: 1,
-                              borderColor: 'divider',
-                              borderRadius: 1,
-                              mb: 1,
-                              '&:hover': {
-                                bgcolor: 'action.hover',
-                                cursor:'pointer',
-                              },
-                            }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar
-                                sx={{
-                                  bgcolor: board.color || 'primary.main',
-                                  width: 40,
-                                  height: 40,
-                                }}
-                            >
-                              <Folder/>
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                              primary={board.title}
-                              secondary={`${t('board.created')}: ${formatDate(i18n.language, board.createdAt, false)}`}
-                          />
-                        </ListItem>
-                    ))}
-                  </List>
-              )}
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* Діалог зміни паролю */}
-        <Dialog
-            open={passwordDialogOpen}
-            onClose={() => setPasswordDialogOpen(false)}
-            maxWidth="sm"
-            fullWidth
-        >
-          <DialogTitle>{t('profile.passwordDialog')}</DialogTitle>
-          <DialogContent>
-            <Box sx={{pt: 2}}>
-              <TextField
-                  fullWidth
-                  label={t('profile.currentPassword')}
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  sx={{mb: 2}}
-              />
-              <TextField
-                  fullWidth
-                  label={t('profile.newPassword')}
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  sx={{mb: 2}}
-                  helperText={t('profile.passwordHelp')}
-              />
-              <TextField
-                  fullWidth
-                  label={t('profile.confirmNewPassword')}
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+              {/* Кнопка завантаження фото */}
+              <IconButton
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  bgcolor: 'background.paper',
+                  boxShadow: 2,
+                  '&:hover': { bgcolor: 'grey.200' },
+                }}
+                component="label"
+                disabled={!userId}
+              >
+                <PhotoCamera />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </IconButton>
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setPasswordDialogOpen(false)}>
-              {t('common.cancel')}
-            </Button>
+
+            {/* Ім'я та email */}
+            <Typography variant="h5" gutterBottom>
+              {user?.name || t('common.noName')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {user?.email}
+            </Typography>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Статистика */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: 2 }}>
+              <Box>
+                <Typography variant="h6">{boards.length}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t('profile.projects')}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Кнопка зміни паролю */}
             <Button
-                variant="contained"
-                onClick={handlePasswordChange}
-                disabled={updateLoading}
+              variant="outlined"
+              startIcon={<Lock />}
+              fullWidth
+              onClick={() => setPasswordDialogOpen(true)}
+              sx={{ mt: 2 }}
             >
               {t('profile.changePassword')}
             </Button>
-          </DialogActions>
-        </Dialog>
+          </Paper>
+        </Grid>
 
-        {/* Snackbar для повідомлень */}
-        <Snackbar
-            open={snackbar.open}
-            autoHideDuration={4000}
-            onClose={() => setSnackbar({...snackbar, open: false})}
-            anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
-        >
-          <Alert
-              onClose={() => setSnackbar({...snackbar, open: false})}
-              severity={snackbar.severity}
-              sx={{width: '100%'}}
+        {/* Права колонка - Деталі профілю та проекти */}
+        <Grid item xs={12} md={8}>
+          {/* Інформація профілю */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6">
+                {t('profile.title')}
+              </Typography>
+              {!isEditing ? (
+                <Button
+                  variant="contained"
+                  startIcon={<Edit />}
+                  onClick={handleEditToggle}
+                  disabled={updateLoading}
+                >
+                  {t('common.edit')}
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  startIcon={<Cancel />}
+                  onClick={handleEditToggle}
+                  disabled={updateLoading}
+                >
+                  {t('common.cancel')}
+                </Button>
+              )}
+            </Box>
+
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={t('auth.nameLabel')}
+                  value={isEditing ? editedName : user?.name || ''}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={t('auth.emailLabel')}
+                  value={isEditing ? editedEmail : user?.email || ''}
+                  onChange={(e) => setEditedEmail(e.target.value)}
+                  disabled={!isEditing}
+                  type="email"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl sx={{ minWidth: 120 }}>
+                  <InputLabel>{t('profile.role')}</InputLabel>
+                  <Select
+                    label={t('profile.role')}
+                    value={roleId}
+                    onChange={(e) => SetRoleId(e.target.value)}
+                    disabled={!isEditing}
+                  >
+                    {roles?.roles?.map((role: any) => (
+                      <MenuItem key={role.id} value={role.id}>
+                        {role.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label={t('profile.registrationDate')}
+                  value={user?.createdAt ? formatDate(i18n.language, user.createdAt, false) : ''}
+                  disabled
+                  variant="filled"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label={t('profile.lastUpdate')}
+                  value={user?.updatedAt ? formatDate(i18n.language, user.updatedAt, false) : ''}
+                  disabled
+                  variant="filled"
+                />
+              </Grid>
+            </Grid>
+
+            {isEditing && (
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<Save />}
+                  onClick={handleSave}
+                  disabled={updateLoading}
+                >
+                  {t('profile.saveChanges')}
+                </Button>
+              </Box>
+            )}
+          </Paper>
+
+          {/* Проекти (Дошки) */}
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                <DashboardIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                {t('profile.myProjects')} ({boards.length})
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => navigate('/projects')}
+              >
+                {t('common.viewAll')}
+              </Button>
+            </Box>
+
+            {boards.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">
+                  {t('profile.noProjects')}
+                </Typography>
+                <Button
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                  onClick={() => navigate('/projects')}
+                >
+                  {t('profile.createFirst')}
+                </Button>
+              </Box>
+            ) : (
+              <List>
+                {boards.slice(0, 5).map((board: any) => (
+                  <ListItem
+                    key={board.id}
+                    onClick={() => navigate(`/board/${board.id}`)}
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 1,
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                        cursor: 'pointer',
+                      },
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          bgcolor: board.color || 'primary.main',
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        <Folder />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={board.title}
+                      secondary={`${t('board.created')}: ${formatDate(i18n.language, board.createdAt, false)}`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Діалог зміни паролю */}
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('profile.passwordDialog')}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <TextField
+              fullWidth
+              label={t('profile.currentPassword')}
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label={t('profile.newPassword')}
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              sx={{ mb: 2 }}
+              helperText={t('profile.passwordHelp')}
+            />
+            <TextField
+              fullWidth
+              label={t('profile.confirmNewPassword')}
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasswordDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handlePasswordChange}
+            disabled={updateLoading}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Container>
+            {t('profile.changePassword')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar для повідомлень */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 }
-

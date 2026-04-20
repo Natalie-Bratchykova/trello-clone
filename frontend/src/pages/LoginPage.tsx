@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -17,6 +16,7 @@ import {
 import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import  { LOGIN_MUTATION } from '../helpers/gql/userGQL';
+import { useUserContext } from '../context/UserContext';
 
 
 interface LoginData {
@@ -27,13 +27,10 @@ interface LoginData {
   };
 }
 
-interface LoginPageProps {
-  onLogin: (user: { id: string; name: string; email: string }) => void;
-}
-
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { login: loginToContext } = useUserContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -43,9 +40,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleLoginSuccess = (data: LoginData) => {
     if (data.login) {
-      localStorage.setItem('user', JSON.stringify(data.login));
-      localStorage.setItem('isAuthenticated', 'true');
-      onLogin(data.login);
+      loginToContext(data.login);
       navigate('/projects');
     }
   };

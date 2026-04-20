@@ -1,23 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  IconButton,
-  Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Avatar,
-  Chip,
-} from '@mui/material';
-import { Close } from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Autocomplete from '@mui/material/Autocomplete';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Avatar from '@mui/material/Avatar';
+import Chip from '@mui/material/Chip';
+import Close  from '@mui/icons-material/Close';
 import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -26,6 +24,7 @@ import {GET_USERS_EDIT_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from 
 import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
 import {QUILL_MODULES, QUILL_FORMATS} from "../helpers/utils/textEditorHelper.ts";
 import type {User, ParentCardOption, EditCardDialogProps, EditCardData, UpdateCardData, GetUsersData} from '../helpers/types/cardType.ts'
+import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
 
 
 export default function EditCardDialog({
@@ -278,7 +277,8 @@ export default function EditCardDialog({
               <li key={option.id} {...props}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
                   {option.profileImage ?
-                      <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }} src={option.profileImage? `http://localhost:3000${option.profileImage}`: undefined}/> :
+                      <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}
+                              src={getUserProfileUrl(option.profileImage)}/> :
                       <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>
                         {(option.name || option.email).charAt(0).toUpperCase()}
                       </Avatar>

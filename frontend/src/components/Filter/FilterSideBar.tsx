@@ -16,6 +16,7 @@ import {t} from "i18next";
 import {useMemo} from "react";
 import FilterSideBarChip from "./FilterSideBarChip.tsx";
 import { useBoardFilter } from '../../context/BoardFilterContext.tsx';
+import {getUserProfileUrl} from "../../helpers/utils/userHelper.ts";
 
 export default function FilterSideBar() {
     const {
@@ -124,7 +125,8 @@ export default function FilterSideBar() {
                         toggleState={toggleUser}
                         renderItem={
                         (user)=>
-                            <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }} src={user.profileImage ? `http://localhost:3000${user.profileImage}` : undefined}>
+                            <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem' }}
+                                    src={getUserProfileUrl(user?.profileImage)}>
                         {user.name[0]}
                     </Avatar>}
                     />

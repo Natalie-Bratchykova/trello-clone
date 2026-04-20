@@ -34,6 +34,8 @@ import {formatDate} from "../helpers/utils/dateLocale.ts";
 import {GET_CARD, GET_BOARD_LISTS, UPDATE_CARD_LIST, DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION} from "../helpers/gql/cardGQL.ts";
 import TextEditorUneditable from "../components/Ticket/TextEditorUneditable.tsx";
 import ReleaseIncludingTask from "../components/Ticket/Release/ReleaseIncludingTasks.tsx";
+import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
+import { useUserContext } from '../context/UserContext';
 
 
 
@@ -91,6 +93,7 @@ export default function TaskPage() {
   const navigate = useNavigate();
   const client = useApolloClient();
   const { t, i18n } = useTranslation();
+  const { user: currentUser } = useUserContext();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -110,7 +113,6 @@ export default function TaskPage() {
   const [deleteCard, { loading: deletingCard }] = useMutation(DELETE_CARD_MUTATION);
   const [assignUser, { loading: assigningUser }] = useMutation(ASSIGN_USER_MUTATION);
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAssignedToMe = data?.card?.user?.id === currentUser?.id;
 
   const boardLists: { id: string; title: string; position: number }[] =
@@ -518,7 +520,7 @@ export default function TaskPage() {
                   <SidebarField icon={<Person sx={{ fontSize: 18 }} />} label={t('filters.assignees')}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar
-                        src={card.user.profileImage ? `http://localhost:3000${card.user.profileImage}` : undefined}
+                        src={getUserProfileUrl(card.user.profileImage)}
                         sx={{ width: 32, height: 32, fontSize: '0.85rem', bgcolor: 'primary.main' }}
                       >
                         {!card.user.profileImage && card.user.name?.[0]?.toUpperCase()}
@@ -633,4 +635,3 @@ function SidebarField({ icon, label, children }: { icon: React.ReactNode; label:
     </Box>
   );
 }
-

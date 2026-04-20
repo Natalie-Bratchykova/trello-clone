@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useUserContext } from '../context/UserContext';
 
 const REGISTER_MUTATION = gql`
   mutation Register($email: String!, $password: String!, $name: String!) {
@@ -35,13 +36,10 @@ interface RegisterData {
   };
 }
 
-interface RegisterPageProps {
-  onLogin: (user: { id: string; name: string; email: string }) => void;
-}
-
-export default function RegisterPage({ onLogin }: RegisterPageProps) {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { login: loginToContext } = useUserContext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,14 +57,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
 
   const handleRegisterSuccess = (data: RegisterData) => {
     if (data.createUser) {
-      // Зберігаємо інформацію в localStorage
-      localStorage.setItem('user', JSON.stringify(data.createUser));
-      localStorage.setItem('isAuthenticated', 'true');
-
-      // Викликаємо callback для оновлення стану
-      onLogin(data.createUser);
-
-      // Перенаправляємо на сторінку проектів
+      loginToContext(data.createUser);
       navigate('/projects');
     }
   };

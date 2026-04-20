@@ -3,6 +3,7 @@ import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
 import {formatDate} from "../helpers/utils/dateLocale.ts";
 import i18n from "i18next";
+import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
 
 function getDueDateColors(dueDate: string): { bg: string; color: string } {
     const now = new Date();
@@ -151,7 +152,7 @@ export default function TicketCard({card, onClick}:TicketCardProps) {
                 </Box>
                 {card.user && (
                     <Avatar
-                        src={card.user.profileImage ? `http://localhost:3000${card.user.profileImage}` : undefined}
+                        src={getUserProfileUrl(card.user.profileImage)}
                         sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}
                     >
                         {!card.user.profileImage && card.user.name?.[0]?.toUpperCase()}

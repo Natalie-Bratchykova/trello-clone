@@ -31,7 +31,8 @@ import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
 import DeleteCartDialog from "./Ticket/DeleteCartDialog.tsx";
 import type {TicketDetailDialogProps} from "../helpers/types/cardType.ts";
 import ReleaseIncludingTask from "./Ticket/Release/ReleaseIncludingTasks.tsx";
-
+import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
+import { useUserContext } from '../context/UserContext';
 
 export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
   const [displayReleaseTasks, setDisplayReleaseTasks] = useState(card?.releaseTasks || []);
   const client = useApolloClient();
   const { t, i18n } = useTranslation();
+  const { user: currentUser } = useUserContext();
 
   const [deleteCard, { loading: deleting }] = useMutation(DELETE_CARD_MUTATION);
   const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_MUTATION);
@@ -73,7 +75,6 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
     setDisplayReleaseTasks(card?.releaseTasks || []);
   }, [card?.id, card?.releaseTasks]);
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAssignedToMe = displayUser?.id === currentUser?.id;
 
   const handleListChange = async (newListId: string) => {
@@ -392,7 +393,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
               <DetailField icon={<Person sx={{ fontSize: 18 }} />} label={t('filters.assignees')}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Avatar
-                    src={displayUser.profileImage ? `http://localhost:3000${displayUser.profileImage}` : undefined}
+                    src={getUserProfileUrl(displayUser.profileImage)}
                     sx={{ width: 28, height: 28, fontSize: '0.8rem', bgcolor: 'primary.main' }}
                   >
                     {!displayUser.profileImage && displayUser.name?.[0]?.toUpperCase()}
@@ -497,3 +498,4 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
     </Dialog>
   );
 }
+

@@ -1,6 +1,7 @@
 import {Avatar, Box, Chip, Link, Typography} from "@mui/material";
 import {Link as RouterLink} from "react-router";
 import {t} from "i18next";
+import {getUserProfileUrl} from "../../../helpers/utils/userHelper.ts";
 
 interface ReleaseIncludingTaskProps {
     displayReleaseTasks?: {
@@ -96,7 +97,7 @@ export default function ReleaseIncludingTask({displayReleaseTasks}:ReleaseInclud
                             {rt.user ? (
                                 <>
                                     <Avatar
-                                        src={rt.user.profileImage ? `http://localhost:3000${rt.user.profileImage}` : undefined}
+                                        src={getUserProfileUrl(rt.user.profileImage)}
                                         sx={{width: 20, height: 20, fontSize: '0.65rem', bgcolor: 'primary.main'}}
                                     >
                                         {!rt.user.profileImage && rt.user.name?.[0]?.toUpperCase()}

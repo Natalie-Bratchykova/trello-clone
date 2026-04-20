@@ -1,33 +1,29 @@
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, IconButton, Menu, MenuItem } from '@mui/material';
 import { Dashboard, AccountCircle, Login, Logout } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useUserData } from '../hooks/useUserData.ts';
 import LanguageSwitcher from './LanguageSwitcher';
-interface NavbarProps {
-  isAuthenticated: boolean;
-  user?: {
-    name: string;
-    email: string;
-  };
-  onLogout: () => void;
-  onLogin: () => void;
-}
+import { getUserProfileUrl } from "../helpers/utils/userHelper.ts";
+import { useUserContext } from '../context/UserContext';
 
-export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps) {
+export default function Navbar() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user, isAuthenticated, logout, updateUser } = useUserContext();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const { data } = useUserData(user?.id, !user?.id || !!user?.profileImage);
 
-  // TODO START: refactor usage of user data to avoid code duplication and extra queries
-  const {data} = useUserData(user?.id || '');
+  useEffect(() => {
+    if (data?.user?.profileImage && data.user.profileImage !== user?.profileImage) {
+      updateUser({ profileImage: data.user.profileImage });
+    }
+  }, [data, user, updateUser]);
 
-  const profileImageUrl = data?.user?.profileImage
-      ? `http://localhost:3000${data?.user?.profileImage}`
-      : undefined;
-  // TODO END
+  const profileImageUrl = getUserProfileUrl(user?.profileImage);
+
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -41,7 +37,7 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
   };
 
   return (
-    <AppBar position="static" sx={{ mb: 4 }}>
+    <AppBar position="static">
       <Toolbar>
         {/* Лого */}
         <Dashboard sx={{ mr: 2 }} />
@@ -115,7 +111,7 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
               <MenuItem
                 onClick={() => {
                   handleClose();
-                  onLogout();
+                  logout();
                   navigate('/login');
                 }}
               >
@@ -140,4 +136,3 @@ export default function Navbar({ isAuthenticated, user, onLogout }: NavbarProps)
     </AppBar>
   );
 }
-

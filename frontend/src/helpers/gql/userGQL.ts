@@ -20,6 +20,30 @@ export const GET_USER_PROFILE = gql`
   }
 `;
 
+export const GET_USER_PROFILE_INFO = gql`
+  query GetUserProfile($userId: ID!) {
+    user(id: $userId) {
+      id
+      email
+      name
+      roleId
+      profileImage
+      createdAt
+      updatedAt
+    }
+  }
+`;
+export const GET_USER_PROFILE_SMALL = gql`
+  query GetUserProfile($userId: ID!) {
+    user(id: $userId) {
+      id
+      email
+      name
+      profileImage
+    }
+  }
+`;
+
 export const UPDATE_USER = gql`
   mutation UpdateUser($id: ID!, $data: UpdateUserInput!) {
     updateUser(id: $id, data: $data) {

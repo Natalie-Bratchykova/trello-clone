@@ -15,6 +15,7 @@ import {QUILL_FORMATS, QUILL_MODULES} from "../../../helpers/utils/textEditorHel
 import {PRIORITY_OPTIONS} from "../../../helpers/utils/color.ts";
 import {useTranslation} from "react-i18next";
 import ReleaseTasksSelector from "../Release/ReleaseTasksSelector.tsx";
+import {getUserProfileUrl} from "../../../helpers/utils/userHelper.ts";
 
 interface User {
     id: string;
@@ -193,7 +194,8 @@ export default  function CreateCartVisual(props){
                             <li key={option.id} {...props}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
                                     {option.profileImage ?
-                                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }} src={option.profileImage? `http://localhost:3000${option.profileImage}`: undefined}/> :
+                                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}
+                                                src={getUserProfileUrl(option.profileImage)}/> :
                                         <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>
                                             {(option.name || option.email).charAt(0).toUpperCase()}
                                         </Avatar>

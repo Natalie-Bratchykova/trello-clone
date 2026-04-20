@@ -1,5 +1,5 @@
 import {memo} from "react";
-import {Avatar, Box, Button, CircularProgress, IconButton, Tooltip, Typography} from "@mui/material";
+import {Avatar, Box, Button, CircularProgress, Divider, IconButton, Tooltip, Typography} from "@mui/material";
 import ReactQuill from "react-quill-new";
 import {Check, Checklist, Close, Delete, Edit, Send} from "@mui/icons-material";
 import TextEditorUneditable from "../../Ticket/TextEditorUneditable.tsx";
@@ -11,12 +11,10 @@ import {
     QUILL_FORMATS,
     QUILL_MODULES
 } from "../../../helpers/utils/textEditorHelper.ts";
-
-
+import {getUserProfileUrl} from "../../../helpers/utils/userHelper.ts";
 
 function CommentsSectionVisual(props){
     let {comments,
-        currentUser,
         newComment,
         setNewComment,
         creating,
@@ -26,11 +24,13 @@ function CommentsSectionVisual(props){
         editingId,
         setEditingId,
         handleUpdate,
+        handleChecklistToggle,
         editContent,
         setEditContent,
         startEdit,
-        handleDelete} = props;
-    console.log(currentUser)
+        handleDelete,
+        currentUser} = props;
+
     return (<Box>
         <Typography variant="h6" sx={{fontWeight: 600, mb: 2}}>
             {t('comments.title')} {comments.length > 0 && `(${comments.length})`}
@@ -39,11 +39,10 @@ function CommentsSectionVisual(props){
         {/* New comment input */}
         <Box sx={{display: 'flex', gap: 1.5, mb: 3, alignItems: 'flex-start'}}>
             <Avatar
-                lazyload
                 sx={{width: 32, height: 32, fontSize: '0.85rem', bgcolor: 'primary.main', mt: 0.5}}
-                src={currentUser.profileImage ? `http://localhost:3000${currentUser.profileImage}` : undefined}
+                src={getUserProfileUrl(currentUser?.profileImage)}
             >
-                {currentUser.name?.[0]?.toUpperCase()}
+                {currentUser?.name?.[0]?.toUpperCase()}
             </Avatar>
 
             <Box sx={{flex: 1}}>
@@ -128,7 +127,7 @@ function CommentsSectionVisual(props){
                 {index > 0 && <Divider sx={{my: 2}}/>}
                 <Box sx={{display: 'flex', gap: 1.5}}>
                     <Avatar
-                        src={comment.user.profileImage ? `http://localhost:3000${comment.user.profileImage}` : undefined}
+                        src={getUserProfileUrl(comment.user.profileImage)}
                         sx={{width: 32, height: 32, fontSize: '0.85rem', bgcolor: 'secondary.main', mt: 0.5}}
                     >
                         {!comment.user.profileImage && comment.user.name?.[0]?.toUpperCase()}
@@ -143,11 +142,10 @@ function CommentsSectionVisual(props){
                             </Typography>
                             {comment.createdAt !== comment.updatedAt && (
                                 <Typography variant="caption" color="text.secondary" sx={{fontStyle: 'italic'}}>
-                                    {t(comments.edited)}
+                                    {t('comments.edited')}
                                 </Typography>
                             )}
                         </Box>
-                        {console.log(comment)}
                         {editingId === comment.id ? (
                             <Box>
                                 <Box
@@ -199,13 +197,7 @@ function CommentsSectionVisual(props){
                                     <ChecklistRenderer
                                         html={comment.content}
                                         onToggle={(_idx, updatedHtml) => {
-                                            updateComment({
-                                                variables: {
-                                                    id: comment.id,
-                                                    data: {content: updatedHtml},
-                                                    userId: currentUser.id,
-                                                },
-                                            });
+                                            handleChecklistToggle(comment.id, updatedHtml);
                                         }}
                                     />
                                 ) : (
