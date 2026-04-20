@@ -1,34 +1,13 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Box,
-  Typography,
-  IconButton,
-  Chip,
-  Avatar,
-  Divider,
-  Link,
-  Button,
-  FormControl,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, PersonAdd, List as ListIcon } from '@mui/icons-material';
-import { Link as RouterLink } from 'react-router-dom';
-import CommentsSection from './CommentsSection';
-import EditCardDialog from './EditCardDialog';
-import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel} from "../helpers/utils/color.ts";
+import { Dialog, DialogContent, Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import {formatDate} from "../helpers/utils/dateLocale.ts";
-import SubTask from "./Ticket/SubTask.tsx";
-import DetailField from "./Ticket/DetailField.tsx";
-import TextEditorUneditable from "./Ticket/TextEditorUneditable.tsx";
-import DeleteCartDialog from "./Ticket/DeleteCartDialog.tsx";
-import type {TicketDetailDialogProps} from "../helpers/types/cardType.ts";
-import ReleaseIncludingTask from "./Ticket/Release/ReleaseIncludingTasks.tsx";
-import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
+import EditCardDialog from './EditCardDialog';
+import DeleteCartDialog from './Ticket/DeleteCartDialog';
+import DialogHeader from './TicketDetailDialog/DialogHeader';
+import DialogMainContent from './TicketDetailDialog/DialogMainContent';
+import DialogSidebar from './TicketDetailDialog/DialogSidebar';
+import { PRIORITY_CONFIG } from '../helpers/utils/color';
+import type { TicketDetailDialogProps } from '../helpers/types/cardType';
 import { useCardActions } from '../hooks/useCardActions';
 
 export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
@@ -129,256 +108,35 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          pb: 1,
-        }}
-      >
-        <Box sx={{ flex: 1, pr: 2 }}>
-          {card.suffix && (
-            <Link
-              component={RouterLink}
-              to={`/task/${card.id}`}
-              underline="hover"
-              sx={{ fontWeight: 600, mb: 0.5, display: 'block', fontSize: '0.75rem' }}
-            >
-              {card.suffix}
-            </Link>
-          )}
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            {card.title}
-          </Typography>
-          {displayListTitle && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {t('ticketDetail.inList')} <strong>{displayListTitle}</strong>
-            </Typography>
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<Edit />}
-            onClick={() => setEditOpen(true)}
-            sx={{ textTransform: 'none' }}
-          >
-            {t('common.edit')}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            color="error"
-            startIcon={<Delete />}
-            onClick={() => setDeleteConfirmOpen(true)}
-            sx={{ textTransform: 'none' }}
-          >
-            {t('common.delete')}
-          </Button>
-          <IconButton onClick={onClose} size="small">
-            <Close />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <DialogHeader
+        card={card}
+        displayListTitle={displayListTitle}
+        onEdit={() => setEditOpen(true)}
+        onDelete={() => setDeleteConfirmOpen(true)}
+        onClose={onClose}
+        t={t}
+      />
 
       <DialogContent sx={{ pt: 1 }}>
         <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
-          {/* Main content */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            {/* Description */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-              {t('ticketDetail.description')}
-            </Typography>
-            {card.description ? (
-              <TextEditorUneditable html={card.description}/>
-            ) : (
-              <Typography variant="body2" color="text.disabled" sx={{ mb: 2, fontStyle: 'italic' }}>
-                {t('ticketDetail.noDescription')}
-              </Typography>
-            )}
-
-            {/* Parent task */}
-            {card.parent && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                  {t('parentTask.title')}
-                </Typography>
-                <Link
-                  component={RouterLink}
-                  to={`/task/${card.parent.id}`}
-                  underline="hover"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1,
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    textDecoration: 'none',
-                    '&:hover': { backgroundColor: 'action.hover' },
-                  }}
-                >
-                  <AccountTree sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  {card.parent.suffix && (
-                    <Chip label={card.parent.suffix} size="small" color="primary" variant="outlined" />
-                  )}
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {card.parent.title}
-                  </Typography>
-                </Link>
-              </Box>
-            )}
-
-            {/* Children subtasks */}
-            {card.children && card.children.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                  {t('ticketDetail.subtasks', { count: card.children.length })}
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  {card.children.map((child) => (
-                   <SubTask child={child} key={child.id} />
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* Release Tasks */}
-            {card.type === 'RELEASE' && displayReleaseTasks && displayReleaseTasks.length > 0 && (
-              <ReleaseIncludingTask displayReleaseTasks={displayReleaseTasks}/>
-            )}
-
-            {/* Comments */}
-            <Divider sx={{ my: 3 }} />
-            <CommentsSection cardId={card.id} cardDescription={card.description} />
-          </Box>
-
-          {/* Sidebar */}
-          <Box sx={{ width: { xs: '100%', sm: 240 }, flexShrink: 0 }}>
-            {/* Priority */}
-            {priorityConfig && (
-              <DetailField icon={<Flag sx={{ fontSize: 18 }} />} label={t('priority.label')}>
-                <Chip
-                  label={`${priorityConfig.icon} ${t(priorityConfig.labelKey)}`}
-                  size="small"
-                  sx={{
-                    backgroundColor: priorityConfig.bg,
-                    color: priorityConfig.color,
-                    fontWeight: 600,
-                  }}
-                />
-              </DetailField>
-            )}
-
-            {/* Due Date */}
-            {card.dueDate && (() => {
-              const dueDateColors = getDueDateColors(card.dueDate!);
-              return (
-                <DetailField icon={<CalendarToday sx={{ fontSize: 18 }} />} label={t('dueDate.deadline')}>
-                  <Box>
-                    <Chip
-                      label={formatDate(i18n.language, card.dueDate, false)}
-                      size="small"
-                      sx={{
-                        backgroundColor: dueDateColors.bg,
-                        color: dueDateColors.color,
-                        fontWeight: 600,
-                      }}
-                    />
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {getDueDateLabel(card.dueDate!, t)}
-                    </Typography>
-                  </Box>
-                </DetailField>
-              );
-            })()}
-
-            {/* Assignee */}
-            {displayUser && (
-              <DetailField icon={<Person sx={{ fontSize: 18 }} />} label={t('filters.assignees')}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar
-                    src={getUserProfileUrl(displayUser.profileImage)}
-                    sx={{ width: 28, height: 28, fontSize: '0.8rem', bgcolor: 'primary.main' }}
-                  >
-                    {!displayUser.profileImage && displayUser.name?.[0]?.toUpperCase()}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
-                      {displayUser.name}
-                    </Typography>
-                    {displayUser.email && (
-                      <Typography variant="caption" color="text.secondary">
-                        {displayUser.email}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              </DetailField>
-            )}
-
-            {/* Assign to me button */}
-            {!isAssignedToMe && currentUser?.id && (
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<PersonAdd sx={{ fontSize: 16 }} />}
-                onClick={handleAssignMe}
-                disabled={assigningUser}
-                fullWidth
-                sx={{ textTransform: 'none', mb: 2 }}
-              >
-                {assigningUser ? t('assignee.assigning') : t('assignee.assignMe')}
-              </Button>
-            )}
-
-            {/* List / Status selector */}
-            <DetailField icon={<ListIcon sx={{ fontSize: 18 }} />} label={t('task.list')}>
-              {boardLists.length > 0 ? (
-                <FormControl size="small" fullWidth>
-                  <Select
-                    value={displayListId}
-                    onChange={(e) => handleListChange(e.target.value as string)}
-                    disabled={updatingList}
-                    variant="outlined"
-                    sx={{
-                      fontSize: '0.875rem',
-                      '& .MuiSelect-select': { py: 0.75, px: 1.5 },
-                    }}
-                  >
-                    {boardLists.map((list) => (
-                      <MenuItem key={list.id} value={list.id}>
-                        {list.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              ) : (
-                <Chip label={displayListTitle} size="small" variant="outlined" />
-              )}
-            </DetailField>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Timestamps */}
-            {card.createdAt && (
-              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.createdAt')}>
-                <Typography variant="body2" color="text.secondary">
-                  {formatDate(i18n.language, card.createdAt)}
-                </Typography>
-              </DetailField>
-            )}
-            {card.updatedAt && (
-              <DetailField icon={<AccessTime sx={{ fontSize: 18 }} />} label={t('ticketDetail.updatedAt')}>
-                <Typography variant="body2" color="text.secondary">
-                  {formatDate(i18n.language, card.updatedAt)}
-                </Typography>
-              </DetailField>
-            )}
-          </Box>
+          <DialogMainContent card={card} displayReleaseTasks={displayReleaseTasks} t={t} />
+          
+          <DialogSidebar
+            card={card}
+            priorityConfig={priorityConfig}
+            displayUser={displayUser}
+            displayListId={displayListId}
+            displayListTitle={displayListTitle}
+            boardLists={boardLists}
+            isAssignedToMe={isAssignedToMe}
+            currentUser={currentUser}
+            updatingList={updatingList}
+            assigningUser={assigningUser}
+            onListChange={handleListChange}
+            onAssignMe={handleAssignMe}
+            t={t}
+            i18n={i18n}
+          />
         </Box>
       </DialogContent>
 
@@ -402,7 +160,14 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
         }}
       />
 
-    <DeleteCartDialog setDeleteConfirmOpen={setDeleteConfirmOpen} deleting={deletingCard} t={t} deleteConfirmOpen={deleteConfirmOpen} handleDelete={handleDelete} card={card}/>
+      <DeleteCartDialog
+        setDeleteConfirmOpen={setDeleteConfirmOpen}
+        deleting={deletingCard}
+        t={t}
+        deleteConfirmOpen={deleteConfirmOpen}
+        handleDelete={handleDelete}
+        card={card}
+      />
     </Dialog>
   );
 }
