@@ -2,9 +2,7 @@ import { useState, useMemo, FormEvent } from 'react';
 
 import 'react-quill-new/dist/quill.snow.css';
 import {
-  useCreateCardMutation,
-  useGetBoardCardsForCreateLazyQuery, useGetBoardCardsForCreateQuery,
-  useGetUsersLazyQuery,
+  useCreateCardMutation, useGetBoardCardsForCreateQuery,
   useGetUsersQuery
 } from "../../../generated/graphql.ts";
 import CreateCartVisual from "../Visual/CreateCartVisual.tsx";

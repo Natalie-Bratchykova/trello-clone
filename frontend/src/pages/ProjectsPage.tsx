@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
@@ -33,7 +33,6 @@ interface Board {
 export default function ProjectsPage() {
   const { t } = useTranslation();
   const { isAuthenticated, user } = useUserContext();
-  const [boards, setBoards] = useState<Board[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteDialogState, setDeleteDialogState] = useState<{
     open: boolean;
@@ -58,7 +57,10 @@ export default function ProjectsPage() {
     skip: !isAuthenticated,
   });
 
+  const boards = data?.boards ?? [];
+
   const [deleteBoard, { loading: deleteLoading }] = useMutation(DELETE_BOARD_MUTATION, {
+    refetchQueries: [{ query: GET_ALL_BOARDS }],
     onCompleted: () => {
       setSnackbar({
         open: true,
@@ -75,12 +77,6 @@ export default function ProjectsPage() {
       });
     },
   });
-
-  useEffect(() => {
-    if (data?.boards) {
-      setBoards(data.boards);
-    }
-  }, [data]);
 
   const handleDeleteBoard = (id: string) => {
     const board = boards.find(b => b.id === id);
@@ -100,7 +96,6 @@ export default function ProjectsPage() {
       await deleteBoard({
         variables: { id: deleteDialogState.boardId },
       });
-      setBoards(boards.filter(board => board.id !== deleteDialogState.boardId));
     } catch (err) {
       console.error('Delete error:', err);
     }
@@ -110,8 +105,7 @@ export default function ProjectsPage() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleBoardCreated = (newBoard: Board) => {
-    setBoards([newBoard, ...boards]);
+  const handleBoardCreated = () => {
     setSnackbar({
       open: true,
       message: t('projects.createSuccess'),

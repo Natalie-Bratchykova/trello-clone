@@ -15,6 +15,7 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
 import {formatDate} from "../helpers/utils/dateLocale.ts";
+import { GET_ALL_BOARDS } from '../helpers/gql/boardGQL.ts';
 
 const CREATE_BOARD_MUTATION = gql`
   mutation CreateBoard($title: String!, $color: String!, $userId: ID!, $boardIdentifier: String) {
@@ -51,7 +52,7 @@ interface CreateBoardDialogProps {
   open: boolean;
   onClose: () => void;
   userId: string;
-  onBoardCreated: (board: any) => void;
+  onBoardCreated: () => void;
 }
 
 // Preset colors for boards - use translation keys
@@ -70,11 +71,13 @@ export default function CreateBoardDialog({
   const [selectedColor, setSelectedColor] = useState(COLOR_VALUES[0]);
   const [errors, setErrors] = useState<{ title?: string; boardIdentifier?: string }>({});
 
-  const [createBoard, { loading }] = useMutation<CreateBoardData>(CREATE_BOARD_MUTATION);
+  const [createBoard, { loading }] = useMutation<CreateBoardData>(CREATE_BOARD_MUTATION, {
+    refetchQueries: [{ query: GET_ALL_BOARDS }],
+  });
 
   const handleCreateSuccess = (data: CreateBoardData) => {
     if (data.createBoard) {
-      onBoardCreated(data.createBoard);
+      onBoardCreated();
       handleClose();
     }
   };

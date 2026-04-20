@@ -17,13 +17,10 @@ import {
 } from '@mui/material';
 import { Close, CalendarToday, Person, Flag, AccessTime, Edit, AccountTree, Delete, PersonAdd, List as ListIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { gql } from '@apollo/client';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client/react';
 import CommentsSection from './CommentsSection';
 import EditCardDialog from './EditCardDialog';
 import {PRIORITY_CONFIG, getDueDateColors, getDueDateLabel} from "../helpers/utils/color.ts";
 import { useTranslation } from 'react-i18next';
-import {DELETE_CARD_MUTATION, ASSIGN_USER_MUTATION, GET_BOARD_LISTS, UPDATE_CARD_LIST} from "../helpers/gql/cardGQL.ts";
 import {formatDate} from "../helpers/utils/dateLocale.ts";
 import SubTask from "./Ticket/SubTask.tsx";
 import DetailField from "./Ticket/DetailField.tsx";
@@ -32,7 +29,7 @@ import DeleteCartDialog from "./Ticket/DeleteCartDialog.tsx";
 import type {TicketDetailDialogProps} from "../helpers/types/cardType.ts";
 import ReleaseIncludingTask from "./Ticket/Release/ReleaseIncludingTasks.tsx";
 import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
-import { useUserContext } from '../context/UserContext';
+import { useCardActions } from '../hooks/useCardActions';
 
 export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);
@@ -41,25 +38,20 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
   const [displayListId, setDisplayListId] = useState(card?.listId || '');
   const [displayListTitle, setDisplayListTitle] = useState(listTitle || '');
   const [displayReleaseTasks, setDisplayReleaseTasks] = useState(card?.releaseTasks || []);
-  const client = useApolloClient();
   const { t, i18n } = useTranslation();
-  const { user: currentUser } = useUserContext();
 
-  const [deleteCard, { loading: deleting }] = useMutation(DELETE_CARD_MUTATION);
-  const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_MUTATION);
-  const [updateCardList, { loading: updatingList }] = useMutation(UPDATE_CARD_LIST);
+  const {
+    currentUser,
+    boardLists,
+    updatingList,
+    deletingCard,
+    assigningUser,
+    handleAssignMe: assignMe,
+    handleListChange: changeList,
+    handleDeleteCard,
+  } = useCardActions(card?.id, boardId);
 
-  const { data: listsData } = useQuery(GET_BOARD_LISTS, {
-    variables: { boardId },
-    skip: !boardId || !open,
-  });
-
-  const boardLists: { id: string; title: string; position: number }[] =
-    listsData?.boardLists
-      ? [...listsData.boardLists].sort((a: any, b: any) => a.position - b.position)
-      : [];
-
-  // Sync displayUser when card prop changes (e.g. dialog re-opened with different card)
+  // Sync displayUser when card prop changes
   useEffect(() => {
     setDisplayUser(card?.user || null);
   }, [card?.user?.id, card?.id]);
@@ -79,129 +71,45 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
 
   const handleListChange = async (newListId: string) => {
     if (!card || newListId === displayListId) return;
-    try {
-      const { data: updateData } = await updateCardList({
-        variables: { id: card.id, data: { listId: newListId } },
+    const { updatedCard, movedReleaseTasks } = await changeList(newListId, displayListId);
+
+    if (updatedCard) {
+      setDisplayListId(updatedCard.listId);
+      setDisplayListTitle(updatedCard.list?.title || '');
+    }
+
+    if (movedReleaseTasks && movedReleaseTasks.length > 0) {
+      setDisplayReleaseTasks((prev) => {
+        const movedMap = new Map(movedReleaseTasks.map((t) => [t.id, t]));
+        return prev.map((rt) => {
+          const moved = movedMap.get(rt.id);
+          if (moved) {
+            const newTitle = moved.list?.title || boardLists.find((l) => l.id === moved.listId)?.title || rt.list?.title;
+            return { ...rt, listId: moved.listId, list: { id: moved.listId, title: newTitle || '—' } };
+          }
+          return rt;
+        });
       });
-      const result = updateData?.updateCard;
-      if (result?.card) {
-        const updatedCard = result.card;
-        const movedReleaseTasks: { id: string; listId: string; position: number; list?: { id: string; title: string } }[] = result.movedReleaseTasks || [];
-
-        // Update local state immediately — no blink
-        setDisplayListId(updatedCard.listId);
-        setDisplayListTitle(updatedCard.list?.title || '');
-
-        // Find target list title for cache updates
-        const targetListObj = boardLists.find((l) => l.id === newListId);
-
-        // Helper to move a card between lists in the cache
-        const moveCardInCache = (cardId: string, oldListId: string | null, targetListId: string, listObj?: { id: string; title: string }) => {
-          if (oldListId) {
-            client.cache.modify({
-              id: client.cache.identify({ __typename: 'ListObject', id: oldListId }),
-              fields: {
-                cards(existingCardRefs: any[] = [], { readField }) {
-                  return existingCardRefs.filter((ref) => readField('id', ref) !== cardId);
-                },
-              },
-            });
-          }
-          client.cache.modify({
-            id: client.cache.identify({ __typename: 'ListObject', id: targetListId }),
-            fields: {
-              cards(existingCardRefs: any[] = [], { toReference, readField }) {
-                const alreadyInList = existingCardRefs.some((ref) => readField('id', ref) === cardId);
-                if (alreadyInList) return existingCardRefs;
-                const cardRef = toReference({ __typename: 'CardObject', id: cardId });
-                return [...existingCardRefs, cardRef];
-              },
-            },
-          });
-          // Update both listId and list object on the card
-          const listData = listObj || (targetListObj ? { __typename: 'ListObject', id: targetListId, title: targetListObj.title } : undefined);
-          client.cache.modify({
-            id: client.cache.identify({ __typename: 'CardObject', id: cardId }),
-            fields: {
-              listId: () => targetListId,
-              ...(listData
-                ? {
-                    list: (_existing: any, { toReference }: any) => {
-                      return toReference({ __typename: 'ListObject', id: targetListId }) || listData;
-                    },
-                  }
-                : {}),
-            },
-          });
-        };
-
-        // Move the main card
-        moveCardInCache(card.id, displayListId, newListId, updatedCard.list);
-
-        // Move all release-linked tasks and update their list info in cache
-        for (const task of movedReleaseTasks) {
-          const cachedTask = client.cache.readFragment<{ listId: string }>({
-            id: client.cache.identify({ __typename: 'CardObject', id: task.id }),
-            fragment: gql`fragment TaskListId on CardObject { listId }`,
-          });
-          const oldListId = cachedTask?.listId || null;
-          if (oldListId !== task.listId) {
-            moveCardInCache(task.id, oldListId, task.listId, task.list);
-          }
-        }
-
-        // Update local displayReleaseTasks so the UI reflects new list titles immediately
-        if (movedReleaseTasks.length > 0) {
-          setDisplayReleaseTasks((prev) => {
-            const movedMap = new Map(movedReleaseTasks.map((t) => [t.id, t]));
-            return prev.map((rt) => {
-              const moved = movedMap.get(rt.id);
-              if (moved) {
-                const newListTitle = moved.list?.title || boardLists.find((l) => l.id === moved.listId)?.title || rt.list?.title;
-                return {
-                  ...rt,
-                  listId: moved.listId,
-                  list: { id: moved.listId, title: newListTitle || '—' },
-                };
-              }
-              return rt;
-            });
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Error changing list:', err);
     }
   };
 
   const handleDelete = async () => {
     if (!card) return;
-    try {
-      await deleteCard({ variables: { id: card.id } });
+    const success = await handleDeleteCard();
+    if (success) {
       setDeleteConfirmOpen(false);
       onClose();
       onCardDeleted?.();
-    } catch (err) {
-      console.error('Error deleting card:', err);
     }
   };
 
   const handleAssignMe = async () => {
-    if (!card || !currentUser?.id) return;
-    try {
-      const { data: assignData } = await assignUser({ variables: { cardId: card.id, userId: currentUser.id } });
-      if (assignData?.assignUser) {
-        setDisplayUser(assignData.assignUser.user);
-        client.cache.modify({
-          id: client.cache.identify({ __typename: 'CardObject', id: card.id }),
-          fields: {
-            userId: () => assignData.assignUser.userId,
-            user: () => assignData.assignUser.user,
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Error assigning user:', err);
+    if (!card) return;
+    await assignMe();
+    // The hook updates the cache; re-read user from card prop on next render.
+    // But for immediate UI update we also set local state:
+    if (currentUser) {
+      setDisplayUser({ id: currentUser.id, name: currentUser.name, email: currentUser.email, profileImage: currentUser.profileImage });
     }
   };
 
@@ -419,11 +327,11 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
                 variant="outlined"
                 startIcon={<PersonAdd sx={{ fontSize: 16 }} />}
                 onClick={handleAssignMe}
-                disabled={assigning}
+                disabled={assigningUser}
                 fullWidth
                 sx={{ textTransform: 'none', mb: 2 }}
               >
-                {assigning ? t('assignee.assigning') : t('assignee.assignMe')}
+                {assigningUser ? t('assignee.assigning') : t('assignee.assignMe')}
               </Button>
             )}
 
@@ -494,7 +402,7 @@ export default function TicketDetailDialog({ open, onClose, card, listTitle, boa
         }}
       />
 
-    <DeleteCartDialog setDeleteConfirmOpen={setDeleteConfirmOpen} deleting={ deleting} t={t} deleteConfirmOpen={deleteConfirmOpen} handleDelete={handleDelete} card={card}/>
+    <DeleteCartDialog setDeleteConfirmOpen={setDeleteConfirmOpen} deleting={deletingCard} t={t} deleteConfirmOpen={deleteConfirmOpen} handleDelete={handleDelete} card={card}/>
     </Dialog>
   );
 }

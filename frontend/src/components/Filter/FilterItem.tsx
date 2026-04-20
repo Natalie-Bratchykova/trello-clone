@@ -1,5 +1,5 @@
 import {Button, Checkbox, Chip, Menu, MenuItem, Typography} from "@mui/material";
-import {Person} from "@mui/icons-material";
+import {FilterList, Person, PriorityHighOutlined} from "@mui/icons-material";
 import {t} from "i18next";
 import React from "react";
 
@@ -29,12 +29,13 @@ export default function FilterItemComponent({
                                    }: FilterItemProps) {
 
     let buttonVariant = selectedItems.length > 0 ? 'contained' : 'outlined';
+    let filterIcon = isUserFilter ? <Person sx={{fontSize: 16}}/>:<FilterList/>;
 
     return (<>
         <Button
             variant={buttonVariant}
             size="small"
-            startIcon={<Person sx={{fontSize: 16}}/>}
+            startIcon={filterIcon}
             endIcon={
                 selectedItems.length > 0 ? (
                     <Chip label={selectedItems.length} size="small"

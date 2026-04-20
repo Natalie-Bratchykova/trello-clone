@@ -2,27 +2,11 @@ import {Avatar, Box, Chip, Paper, Typography} from "@mui/material";
 import {useDrag} from "react-dnd";
 import {ItemTypes} from "../helpers/types/ItemTypes.ts";
 import {formatDate} from "../helpers/utils/dateLocale.ts";
-import i18n from "i18next";
+import i18n, {t} from "i18next";
 import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
+import {getDueDateColors, PRIORITY_CONFIG} from "../helpers/utils/color.ts";
 
-function getDueDateColors(dueDate: string): { bg: string; color: string } {
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-    if (diffDays < 0)   return { bg: '#d32f2f', color: '#fff' };       // overdue — dark red
-    if (diffDays < 5)   return { bg: '#ffebee', color: '#c62828' };     // < 5 days — red
-    if (diffDays < 14)  return { bg: '#fff3e0', color: '#e65100' };     // < 2 weeks — orange
-    if (diffDays < 30)  return { bg: '#fff9c4', color: '#f57f17' };     // < 1 month — yellow
-    return { bg: '#e8f5e9', color: '#2e7d32' };                         // > 1 month — green
-}
-
-const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    LOW: { label: 'Low', color: '#2e7d32', bg: '#e8f5e9' },
-    MEDIUM: { label: 'Medium', color: '#e65100', bg: '#fff3e0' },
-    HIGH: { label: 'High', color: '#c62828', bg: '#ffebee' },
-};
 
 export interface TicketCardProps {
     card:{
@@ -119,7 +103,7 @@ export default function TicketCard({card, onClick}:TicketCardProps) {
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                     {card.priority && PRIORITY_CONFIG[card.priority] && (
                         <Chip
-                            label={PRIORITY_CONFIG[card.priority].label}
+                            label={t(PRIORITY_CONFIG[card.priority].labelKey)}
                             size="small"
                             sx={{
                                 backgroundColor: PRIORITY_CONFIG[card.priority].bg,
