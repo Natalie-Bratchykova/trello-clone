@@ -1,6 +1,7 @@
 import { Breadcrumbs, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-
+import type { TFunction } from 'i18next';
+import {memo} from "react";
 
 interface TaskBreadcrumbsProps {
   card: {
@@ -14,10 +15,10 @@ interface TaskBreadcrumbsProps {
       };
     };
   };
-  t: any;
+    t: TFunction;
 }
 
-export default function TaskBreadcrumbs({ card, t }: TaskBreadcrumbsProps) {
+function TaskBreadcrumbs({ card, t }: TaskBreadcrumbsProps) {
   return (
     <Breadcrumbs sx={{ mb: 3 }}>
       <Link component={RouterLink} to="/projects" underline="hover" color="inherit">
@@ -38,3 +39,4 @@ export default function TaskBreadcrumbs({ card, t }: TaskBreadcrumbsProps) {
   );
 }
 
+export default memo(TaskBreadcrumbs);

@@ -1,6 +1,7 @@
 import { Box, Container, IconButton, Button, Typography } from '@mui/material';
 import { ArrowBack, Edit, Delete } from '@mui/icons-material';
-
+import type { TFunction } from 'i18next';
+import {COLOR_CONFIG} from "../../helpers/utils/color.ts";
 interface TaskHeaderProps {
   card: {
     suffix?: string;
@@ -9,7 +10,7 @@ interface TaskHeaderProps {
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  t: any;
+  t: TFunction;
 }
 
 export default function TaskHeader({ card, boardColor, onBack, onEdit, onDelete, t }: TaskHeaderProps) {
@@ -32,10 +33,10 @@ export default function TaskHeader({ card, boardColor, onBack, onEdit, onDelete,
             startIcon={<Edit />}
             onClick={onEdit}
             sx={{
-              color: 'white',
-              borderColor: 'rgba(255,255,255,0.5)',
+              color: COLOR_CONFIG.primary_theme.button.edit.color,
+              borderColor: COLOR_CONFIG.primary_theme.button.edit.border,
               textTransform: 'none',
-              '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
+              '&:hover': { borderColor: COLOR_CONFIG.primary_theme.button.edit.hover_border, backgroundColor: COLOR_CONFIG.primary_theme.button.edit.hover_bg },
             }}
           >
             {t('common.edit')}
@@ -45,10 +46,10 @@ export default function TaskHeader({ card, boardColor, onBack, onEdit, onDelete,
             startIcon={<Delete />}
             onClick={onDelete}
             sx={{
-              color: 'white',
-              borderColor: 'rgba(255,255,255,0.3)',
+              color: COLOR_CONFIG.primary_theme.button.delete.color,
+              borderColor: COLOR_CONFIG.primary_theme.button.delete.border,
               textTransform: 'none',
-              '&:hover': { borderColor: '#ef5350', backgroundColor: 'rgba(239,83,80,0.15)' },
+              '&:hover': { borderColor: COLOR_CONFIG.primary_theme.button.delete.hover_border, backgroundColor: COLOR_CONFIG.primary_theme.button.delete.hover_bg },
             }}
           >
             {t('common.delete')}

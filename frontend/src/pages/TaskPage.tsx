@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useCallback, useState} from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
 import { Container, Box, Typography, CircularProgress, Alert, Button, Paper } from '@mui/material';
@@ -70,7 +70,9 @@ export default function TaskPage() {
   const { t, i18n } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-
+  const goBack = useCallback(() => {
+    navigate(-1)
+  }, [])
   const { loading, error, data, refetch } = useQuery<CardData>(GET_CARD, {
     variables: { id },
     skip: !id,
@@ -134,13 +136,14 @@ export default function TaskPage() {
   const priorityConfig = card.priority ? PRIORITY_CONFIG[card.priority] : null;
   const boardColor = card.list?.board?.color || '#0079bf';
 
+
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', pb: 4 }}>
       {/* Header */}
       <TaskHeader
         card={card}
         boardColor={boardColor}
-        onBack={() => navigate(-1)}
+        onBack={goBack}
         onEdit={() => setEditOpen(true)}
         onDelete={() => setDeleteConfirmOpen(true)}
         t={t}
