@@ -11,6 +11,7 @@ import {
   GET_BOARD,
 } from '../helpers/gql/boardGQL';
 import type { Board } from '../helpers/types/BoardTypes';
+import {useCreateBoardMutation, useDeleteBoardMutation, useUpdateBoardMutation} from "../generated/graphql.ts";
 
 /**
  * Custom hook for all board-related operations
@@ -19,10 +20,14 @@ import type { Board } from '../helpers/types/BoardTypes';
 export function useBoardActions(boardId?: string) {
   const client = useApolloClient();
 
-  // ========== DELETE BOARD ==========
-  const [deleteBoardMutation, { loading: deletingBoard }] = useMutation(DELETE_BOARD_MUTATION, {
+  const [createBoard, { loading: createBoardLoading }] = useCreateBoardMutation({
     refetchQueries: [{ query: GET_ALL_BOARDS }],
   });
+  const [deleteBoardMutation, { loading: deletingBoard }] = useDeleteBoardMutation(
+      {
+        refetchQueries: [{ query: GET_ALL_BOARDS }],
+      }
+  );
 
   const deleteBoard = useCallback(
     async (id: string) => {
@@ -37,8 +42,7 @@ export function useBoardActions(boardId?: string) {
     [deleteBoardMutation]
   );
 
-  // ========== UPDATE BOARD ==========
-  const [updateBoardMutation, { loading: updatingBoard }] = useMutation(UPDATE_BOARD_MUTATION);
+  const [updateBoardMutation, { loading: updatingBoard }] = useUpdateBoardMutation();
 
   const updateBoard = useCallback(
     async (id: string, data: { title?: string; color?: string; boardIdentifier?: string }) => {
@@ -56,7 +60,6 @@ export function useBoardActions(boardId?: string) {
     [updateBoardMutation, boardId]
   );
 
-  // ========== DELETE ALL LISTS (EXCEPT BACKLOG) ==========
   const [deleteAllListsMutation, { loading: deletingAllLists }] = useMutation(
     DELETE_ALL_LISTS_EXCEPT_BACKLOG
   );
@@ -69,14 +72,11 @@ export function useBoardActions(boardId?: string) {
       if (!backlogList) return { success: false, error: 'No backlog list found' };
 
       try {
-        // Save previous cache state for rollback
         const previousState = client.cache.extract();
 
-        // Optimistically move cards to backlog
         const nonBacklogLists = board.lists.filter((l) => l.position !== 0);
         const allMovedCards = nonBacklogLists.flatMap((l) => l.cards);
 
-        // Update cache optimistically
         client.cache.modify({
           id: client.cache.identify({ __typename: 'ListObject', id: backlogList.id }),
           fields: {
@@ -99,7 +99,6 @@ export function useBoardActions(boardId?: string) {
 
         await deleteAllListsMutation({ variables: { boardId: id } });
 
-        // Refetch to sync with server
         await client.refetchQueries({
           include: [{ query: GET_BOARD, variables: { id } }],
         });
@@ -113,7 +112,6 @@ export function useBoardActions(boardId?: string) {
     [deleteAllListsMutation, client]
   );
 
-  // ========== DELETE ALL TICKETS ==========
   const [deleteAllTicketsMutation, { loading: deletingAllTickets }] = useMutation(
     BULK_DELETE_ALL_CARDS_BY_BOARD
   );
@@ -125,7 +123,6 @@ export function useBoardActions(boardId?: string) {
 
         await deleteAllTicketsMutation({ variables: { boardId: id } });
 
-        // Refetch board to sync
         await client.refetchQueries({
           include: [{ query: GET_BOARD, variables: { id } }],
         });
@@ -139,7 +136,6 @@ export function useBoardActions(boardId?: string) {
     [deleteAllTicketsMutation, client]
   );
 
-  // ========== DELETE TICKETS BY PRIORITY ==========
   const [deleteByPriorityMutation, { loading: deletingByPriority }] = useMutation(
     BULK_DELETE_CARDS_BY_PRIORITY
   );
@@ -155,7 +151,6 @@ export function useBoardActions(boardId?: string) {
           },
         });
 
-        // Refetch board to sync
         await client.refetchQueries({
           include: [{ query: GET_BOARD, variables: { id } }],
         });
@@ -170,14 +165,13 @@ export function useBoardActions(boardId?: string) {
   );
 
   return {
-    // Actions
+    createBoard,
     deleteBoard,
     updateBoard,
     deleteAllLists,
     deleteAllTickets,
     deleteTicketsByPriority,
-
-    // Loading states
+    createBoardLoading,
     deletingBoard,
     updatingBoard,
     deletingAllLists,

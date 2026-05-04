@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Container,
   Typography,
@@ -17,18 +16,9 @@ import EmptyState from '../components/EmptyState';
 import CreateBoardDialog from '../components/CreateBoardDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 
-import { GET_ALL_BOARDS, DELETE_BOARD_MUTATION } from '../helpers/gql/boardGQL.ts';
 import { useUserContext } from '../context/UserContext';
-
-interface Board {
-  id: string;
-  title: string;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
-  listsCount?: number;
-  cardsCount?: number;
-}
+import { useBoardActions } from '../hooks/useBoardActions';
+import {useGetAllBoardsQuery} from "../generated/graphql.ts";
 
 export default function ProjectsPage() {
   const { t } = useTranslation();
@@ -53,30 +43,11 @@ export default function ProjectsPage() {
     severity: 'success',
   });
 
-  const { loading, error, data } = useQuery<{ boards: Board[] }>(GET_ALL_BOARDS, {
-    skip: !isAuthenticated,
-  });
+  const { loading, error, data } = useGetAllBoardsQuery({skip:!isAuthenticated});
 
   const boards = data?.boards ?? [];
 
-  const [deleteBoard, { loading: deleteLoading }] = useMutation(DELETE_BOARD_MUTATION, {
-    refetchQueries: [{ query: GET_ALL_BOARDS }],
-    onCompleted: () => {
-      setSnackbar({
-        open: true,
-        message: t('projects.deleteSuccess'),
-        severity: 'success',
-      });
-      setDeleteDialogState({ open: false, boardId: null, boardTitle: '' });
-    },
-    onError: (error) => {
-      setSnackbar({
-        open: true,
-        message: t('projects.deleteError', { message: error.message }),
-        severity: 'error',
-      });
-    },
-  });
+  const { deleteBoard, deletingBoard } = useBoardActions();
 
   const handleDeleteBoard = (id: string) => {
     const board = boards.find(b => b.id === id);
@@ -92,12 +63,21 @@ export default function ProjectsPage() {
   const handleConfirmDelete = async () => {
     if (!deleteDialogState.boardId) return;
 
-    try {
-      await deleteBoard({
-        variables: { id: deleteDialogState.boardId },
+    const result = await deleteBoard(deleteDialogState.boardId);
+    
+    if (result.success) {
+      setSnackbar({
+        open: true,
+        message: t('projects.deleteSuccess'),
+        severity: 'success',
       });
-    } catch (err) {
-      console.error('Delete error:', err);
+      setDeleteDialogState({ open: false, boardId: null, boardTitle: '' });
+    } else {
+      setSnackbar({
+        open: true,
+        message: t('projects.deleteError', { message: result.error?.message || 'Unknown error' }),
+        severity: 'error',
+      });
     }
   };
 
@@ -224,7 +204,7 @@ export default function ProjectsPage() {
         onClose={() => setDeleteDialogState({ open: false, boardId: null, boardTitle: '' })}
         onConfirm={handleConfirmDelete}
         boardTitle={deleteDialogState.boardTitle}
-        loading={deleteLoading}
+        loading={deletingBoard}
       />
 
       <Snackbar

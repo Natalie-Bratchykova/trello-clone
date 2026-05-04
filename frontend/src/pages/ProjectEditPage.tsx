@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@apollo/client/react';
+import { useQuery } from '@apollo/client/react';
 import { useTranslation } from 'react-i18next';
 import {
   Container,
@@ -15,58 +15,51 @@ import {
 } from '@mui/material';
 import { ArrowBack, Save } from '@mui/icons-material';
 
-import { CREATE_LIST_MUTATION, DELETE_LIST_MUTATION, UPDATE_LIST_MUTATION, MOVE_LIST_MUTATION } from '../helpers/gql/listGQL';
-import { GET_BOARD_FOR_EDIT, UPDATE_BOARD_MUTATION } from '../helpers/gql/boardGQL';
+import { GET_BOARD_FOR_EDIT } from '../helpers/gql/boardGQL';
 import type { BoardData, ListItem } from '../helpers/types/listTypes.ts';
 import { useListDragDrop } from '../hooks/useListDragDrop';
+import { useProjectEdit } from '../hooks/useProjectEdit';
 import ColorPicker from '../components/ColorPicker';
 import BasicInfoSection from '../components/ProjectEdit/BasicInfoSection';
 import ColumnsListSection from '../components/ProjectEdit/ColumnsListSection';
 
-// ─── Component ─────────────────────────────────────────────
 
 export default function ProjectEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // Form state
+  const {
+    saveBoardWithReorder,
+    addList,
+    renameList,
+    deleteList,
+    validation,
+    snackbar,
+    closeSnackbar,
+    savingBoard,
+    creatingList,
+  } = useProjectEdit(id);
+
   const [title, setTitle] = useState('');
   const [color, setColor] = useState('#0079bf');
   const [boardIdentifier, setBoardIdentifier] = useState('');
   const [lists, setLists] = useState<ListItem[]>([]);
   const [originalLists, setOriginalLists] = useState<ListItem[]>([]);
-  const [errors, setErrors] = useState<{ title?: string; boardIdentifier?: string }>({});
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Snackbar
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({ open: false, message: '', severity: 'success' });
-
-  // ─── Queries / Mutations ──────────────────────────────────
 
   const { loading, error, data, refetch } = useQuery<BoardData>(GET_BOARD_FOR_EDIT, {
     variables: { id },
     skip: !id,
   });
 
-  const [updateBoard, { loading: savingBoard }] = useMutation(UPDATE_BOARD_MUTATION);
-  const [updateList] = useMutation(UPDATE_LIST_MUTATION);
-  const [deleteList] = useMutation(DELETE_LIST_MUTATION);
-  const [createList, { loading: creatingList }] = useMutation(CREATE_LIST_MUTATION);
-  const [moveList] = useMutation(MOVE_LIST_MUTATION);
 
-  // ─── Drag & Drop ──────────────────────────────────────────
 
   const { draggedIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragEnd } = useListDragDrop(lists, (reordered) => {
     setLists(reordered);
     setHasChanges(true);
   });
-
-  // ─── Populate form from fetched data ──────────────────────
 
   useEffect(() => {
     if (data?.board) {
@@ -80,112 +73,48 @@ export default function ProjectEditPage() {
     }
   }, [data]);
 
-  // ─── Validation ───────────────────────────────────────────
-
-  const validate = useCallback(() => {
-    const newErrors: { title?: string; boardIdentifier?: string } = {};
-
-    if (!title.trim()) {
-      newErrors.title = t('validation.titleRequired');
-    } else if (title.trim().length < 3) {
-      newErrors.title = t('validation.titleMin3');
-    } else if (title.length > 50) {
-      newErrors.title = t('validation.titleMax50');
-    }
-
-    if (boardIdentifier.trim()) {
-      if (boardIdentifier.trim().length < 2) {
-        newErrors.boardIdentifier = t('validation.identifierMin2');
-      } else if (boardIdentifier.trim().length > 10) {
-        newErrors.boardIdentifier = t('validation.identifierMax10');
-      } else if (!/^[A-Za-z0-9-]+$/.test(boardIdentifier.trim())) {
-        newErrors.boardIdentifier = t('validation.identifierFormatShort');
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [title, boardIdentifier, t]);
-
-  // ─── Save board info ─────────────────────────────────────
 
   const handleSaveBoard = async () => {
-    if (!validate()) return;
+    if (!id) return;
 
-    try {
-      await updateBoard({
-        variables: {
-          id,
-          data: {
-            title: title.trim(),
-            color,
-            boardIdentifier: boardIdentifier.trim() || null,
-          },
-        },
-      });
+    const result = await saveBoardWithReorder({
+      id,
+      title,
+      color,
+      boardIdentifier,
+      lists,
+      originalLists,
+    });
 
-      const reorderPromises = lists
-        .filter((list) => {
-          const original = originalLists.find((o) => o.id === list.id);
-          return original && original.position !== list.position;
-        })
-        .map((list) =>
-          moveList({
-            variables: {
-              data: { listId: list.id, position: list.position },
-            },
-          }),
-        );
-
-      if (reorderPromises.length > 0) {
-        await Promise.all(reorderPromises);
-      }
-
+    if (result.success) {
       await refetch();
-      setSnackbar({ open: true, message: t('projectEdit.updateSuccess'), severity: 'success' });
       setHasChanges(false);
-    } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: t('projectEdit.saveError'), severity: 'error' });
     }
   };
 
-  // ─── List CRUD ────────────────────────────────────────────
 
   const handleAddList = async (listTitle: string) => {
     if (!id) return;
-    try {
-      await createList({ variables: { title: listTitle, boardId: id } });
+    const result = await addList(listTitle, id);
+    if (result.success) {
       await refetch();
-      setSnackbar({ open: true, message: t('projectEdit.columnAdded'), severity: 'success' });
-    } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: t('projectEdit.columnAddError'), severity: 'error' });
     }
   };
 
   const handleRenameList = async (listId: string, newTitle: string) => {
-    try {
-      await updateList({ variables: { id: listId, data: { title: newTitle } } });
+    const result = await renameList(listId, newTitle);
+    if (result.success) {
       await refetch();
-    } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: t('projectEdit.renameError'), severity: 'error' });
     }
   };
 
   const handleDeleteList = async (listId: string) => {
-    try {
-      await deleteList({ variables: { id: listId } });
+    const result = await deleteList(listId);
+    if (result.success) {
       await refetch();
-      setSnackbar({ open: true, message: t('projectEdit.columnDeleted'), severity: 'success' });
-    } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: t('projectEdit.columnDeleteError'), severity: 'error' });
     }
   };
 
-  // ─── Loading / Error states ───────────────────────────────
 
   if (loading) {
     return (
@@ -208,11 +137,9 @@ export default function ProjectEditPage() {
     );
   }
 
-  // ─── Render ───────────────────────────────────────────────
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', pb: 6 }}>
-      {/* Header */}
       <Box sx={{ backgroundColor: color, color: 'white', py: 2, px: 3, mb: 4 }}>
         <Container maxWidth="md">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -252,7 +179,7 @@ export default function ProjectEditPage() {
           setTitle={setTitle}
           boardIdentifier={boardIdentifier}
           setBoardIdentifier={setBoardIdentifier}
-          errors={errors}
+          errors={validation.errors}
           setHasChanges={setHasChanges}
         />
 
@@ -280,7 +207,6 @@ export default function ProjectEditPage() {
 
         <Divider sx={{ my: 3 }} />
 
-        {/* Bottom actions */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button startIcon={<ArrowBack />} onClick={() => navigate(`/board/${id}`)} sx={{ textTransform: 'none' }}>
             {t('projectEdit.backToBoard')}
@@ -297,15 +223,14 @@ export default function ProjectEditPage() {
         </Box>
       </Container>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={closeSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={closeSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

@@ -48,7 +48,7 @@ export function useCardActions(cardId: string | undefined, boardId: string | und
     ? [...listsData.boardLists].sort((a: any, b: any) => a.position - b.position)
     : [];
 
-  // ─── Cache helpers ───────────────────────────────────────
+
 
   function moveCardInCache({ cardId, oldListId, targetListId, listObj, targetListFallback }: MoveCardInCacheOptions) {
     // Remove from old list

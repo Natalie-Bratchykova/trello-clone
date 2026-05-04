@@ -1,9 +1,8 @@
 import {useState} from 'react';
-import {useMutation} from '@apollo/client/react';
 import {useTranslation} from 'react-i18next';
 import {Box, Button, Paper, TextField} from '@mui/material';
 import {Add} from '@mui/icons-material';
-import {CREATE_LIST_MUTATION} from '../../helpers/gql/listGQL';
+import {useListActions} from '../../hooks/useListActions';
 
 interface AddListCardProps {
     boardId: any,
@@ -15,17 +14,16 @@ export default function AddListCard({boardId, onListCreated}: AddListCardProps) 
     const [isAdding, setIsAdding] = useState(false);
     const [title, setTitle] = useState('');
 
-    const [createList, {loading}] = useMutation(CREATE_LIST_MUTATION, {
-        onCompleted: () => {
-            setTitle('');
-            setIsAdding(false);
-            onListCreated();
-        },
-    });
+    const {createList, creatingList} = useListActions(boardId);
 
     const handleCreate = async () => {
         if (!title.trim()) return;
-        await createList({variables: {title: title.trim(), boardId}});
+        const result = await createList({ title: title.trim(), boardId });
+        if (result.success) {
+            setTitle('');
+            setIsAdding(false);
+            onListCreated();
+        }
     };
 
     return (
@@ -46,17 +44,17 @@ export default function AddListCard({boardId, onListCreated}: AddListCardProps) 
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') handleCreate();
                         }}
-                        autoFocus disabled={loading}
+                        autoFocus disabled={creatingList}
                     />
                     <Box sx={{display: 'flex', gap: 1, mt: 1}}>
                         <Button variant="contained" size="small" onClick={handleCreate}
-                                disabled={loading || !title.trim()}>
+                                disabled={creatingList || !title.trim()}>
                             {t('common.add')}
                         </Button>
                         <Button size="small" onClick={() => {
                             setIsAdding(false);
                             setTitle('');
-                        }} disabled={loading}>
+                        }} disabled={creatingList}>
                             {t('common.cancel')}
                         </Button>
                     </Box>

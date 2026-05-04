@@ -4,7 +4,6 @@ import {useCallback, useState} from "react";
 import {useBoardFilter} from "../../context/BoardFilterContext.tsx";
 import {useBoardDanger} from "../../context/BoardDangerContext.tsx";
 import {useMutation} from "@apollo/client/react";
-import {CREATE_LIST_MUTATION} from "../../helpers/gql/listGQL.ts";
 import {MOVE_TICKET} from "../../helpers/gql/boardGQL.ts";
 import {gql} from "@apollo/client";
 import BoardDialog, {BoardDialogTypeEnum} from "./BoardDialog.tsx";
@@ -34,8 +33,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
         allBoardUsers,
     } = useBoardFilter();
 
-    const [isAddingList, setIsAddingList] = useState(false);
-    const [newListTitle, setNewListTitle] = useState('');
     const [cardDialogState, setCardDialogState] = useState<{
         open: boolean;
         listId: string;
@@ -53,14 +50,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
 
     const { setDangerMenuAnchor } = useBoardDanger();
 
-
-    const [createList, { loading: createListLoading }] = useMutation(CREATE_LIST_MUTATION, {
-        onCompleted: () => {
-            setNewListTitle('');
-            setIsAddingList(false);
-            refetch();
-        },
-    });
 
     const [moveTicket] = useMutation(MOVE_TICKET, {
         onError: (err) => console.error(err),
@@ -170,20 +159,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
         [moveTicket],
     );
 
-    const handleCreateList = async () => {
-        if (!newListTitle.trim() || !id) return;
-
-        try {
-            await createList({
-                variables: {
-                    title: newListTitle.trim(),
-                    boardId: id,
-                },
-            });
-        } catch (err) {
-            console.error('Error creating list:', err);
-        }
-    };
 
     const handleClearList = useCallback(
         async (_listId: string, cards: Card[]) => {
@@ -227,14 +202,9 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
 
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-            {/* Header */}
             <BoardHeader {...boardHeaderProps}/>
-
             <Box sx={{ display: 'flex', flex: 1 }}>
-                {/* Sidebar */}
                 <FilterSideBar />
-
-                {/* Main board area */}
                 <BoardMainContent {...boardMainContentProps}>
                     <>
                         <FilterItemComponent
@@ -304,7 +274,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                 }}
             />
 
-            {/* Delete All Lists Confirmation Dialog */}
             <BoardDialog
                 type={BoardDialogTypeEnum.LIST}
                 text={{
