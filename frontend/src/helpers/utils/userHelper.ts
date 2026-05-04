@@ -1,4 +1,4 @@
-import {API_URL} from "../config.ts";
+import {API_URL} from "../config";
 
 export const getUserProfileUrl = (profileImage?: string | null) => {
   return profileImage ? `${API_URL}${profileImage}`: undefined;

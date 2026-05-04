@@ -6,13 +6,22 @@ import TextEditorUneditable from '../Ticket/TextEditorUneditable';
 import ReleaseIncludingTask from '../Ticket/Release/ReleaseIncludingTasks';
 import { definePriorityLabel } from '../../helpers/utils/color';
 
+interface ReleaseTask {
+  id: string;
+  title: string;
+  listId: string;
+  list?: {
+    id: string;
+    title: string;
+  };
+}
 interface TaskMainContentProps {
   card: {
     id: string;
     title: string;
     description?: string;
     type?: string;
-    releaseTasks?: any[];
+    releaseTasks?: ReleaseTask[];
     parent?: {
       id: string;
       title: string;
@@ -33,6 +42,7 @@ interface TaskMainContentProps {
   displayReleaseTasks: any[];
   t: any;
 }
+
 
 export default function TaskMainContent({ card, displayReleaseTasks, t }: TaskMainContentProps) {
   return (
