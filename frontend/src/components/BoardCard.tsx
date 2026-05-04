@@ -24,10 +24,9 @@ interface BoardCardProps {
     cardsCount?: number;
   };
   onDelete?: (id: string) => void;
-  isDropped?: boolean;
 }
 
-export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps) {
+export default function BoardCard({ board, onDelete }: BoardCardProps) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
@@ -35,20 +34,9 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
     navigate(`/board/${board.id}`);
   };
 
-  const [{opacity}, dragRef] = useDrag(
-    () => ({
-      type: ItemTypes.BOARD_CARD,
-      item: { id: board.id, type: ItemTypes.BOARD_CARD },
-      collect: (monitor) => ({
-        opacity: monitor.isDragging() ? 0.5 : 1,
-      }),
-
-    })
-  );
-
 
   return (
-    <Card ref={dragRef}
+    <Card
       sx={{
         height: '100%',
         display: 'flex',
@@ -59,7 +47,6 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
           boxShadow: 4,
         },
         borderTop: `4px solid ${board.color}`,
-        opacity
       }}
     >
       <CardContent sx={{ flexGrow: 1 }} >
@@ -68,19 +55,11 @@ export default function BoardCard({ board, onDelete, isDropped }: BoardCardProps
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          {board.listsCount !== undefined && (
+          {board.lists.length !== undefined && (
             <Chip
-              label={`${board.listsCount} ${t('board.lists')}`}
+              label={`${board.lists.length} ${t('board.lists')}`}
               size="small"
               color="primary"
-              variant="outlined"
-            />
-          )}
-          {board.cardsCount !== undefined && (
-            <Chip
-              label={`${board.cardsCount} ${t('board.cards')}`}
-              size="small"
-              color="secondary"
               variant="outlined"
             />
           )}

@@ -46,7 +46,6 @@ export default function ProjectsPage() {
   const { loading, error, data } = useGetAllBoardsQuery({skip:!isAuthenticated});
 
   const boards = data?.boards ?? [];
-
   const { deleteBoard, deletingBoard } = useBoardActions();
 
   const handleDeleteBoard = (id: string) => {
