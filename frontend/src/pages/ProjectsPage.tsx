@@ -10,11 +10,11 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import BoardCard from '../components/BoardCard';
+import BoardCard from '../components/Board/BoardCard.tsx';
 import ProjectsSkeleton from '../components/ProjectsSkeleton';
 import EmptyState from '../components/EmptyState';
-import CreateBoardDialog from '../components/CreateBoardDialog';
-import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
+import CreateBoardDialog from '../components/Board/CreateBoardDialog.tsx';
+import ConfirmDeleteDialog from '../components/TicketDetailDialog/ConfirmDeleteDialog.tsx';
 
 import { useUserContext } from '../context/UserContext';
 import { useBoardActions } from '../hooks/useBoardActions';
@@ -112,7 +112,7 @@ export default function ProjectsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{  display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             {t('projects.myProjects')}

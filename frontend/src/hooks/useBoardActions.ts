@@ -2,8 +2,6 @@ import { useCallback } from 'react';
 import { useMutation, useApolloClient } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import {
-  DELETE_BOARD_MUTATION,
-  UPDATE_BOARD_MUTATION,
   DELETE_ALL_LISTS_EXCEPT_BACKLOG,
   BULK_DELETE_ALL_CARDS_BY_BOARD,
   BULK_DELETE_CARDS_BY_PRIORITY,
@@ -11,7 +9,12 @@ import {
   GET_BOARD,
 } from '../helpers/gql/boardGQL';
 import type { Board } from '../helpers/types/BoardTypes';
-import {useCreateBoardMutation, useDeleteBoardMutation, useUpdateBoardMutation} from "../generated/graphql.ts";
+import {
+  useCreateBoardMutation,
+  useDeleteAllListsExceptBacklogMutation,
+  useDeleteBoardMutation,
+  useUpdateBoardMutation
+} from "../generated/graphql.ts";
 
 /**
  * Custom hook for all board-related operations
@@ -60,9 +63,8 @@ export function useBoardActions(boardId?: string) {
     [updateBoardMutation, boardId]
   );
 
-  const [deleteAllListsMutation, { loading: deletingAllLists }] = useMutation(
-    DELETE_ALL_LISTS_EXCEPT_BACKLOG
-  );
+  const [deleteAllListsMutation, { loading: deletingAllLists }] = useDeleteAllListsExceptBacklogMutation();
+
 
   const deleteAllLists = useCallback(
     async (id: string, board: Board) => {

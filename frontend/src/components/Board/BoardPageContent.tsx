@@ -16,7 +16,7 @@ import {
 import FilterSideBar from "../Filter/FilterSideBar.tsx";
 import FilterItemComponent from "../Filter/FilterItem.tsx";
 import CreateCardDialog from "../Ticket/Logic/CreateCardDialog.tsx";
-import TicketDetailDialog from "../TicketDetailDialog.tsx";
+import TicketDetailDialog from "../TicketDetailDialog/TicketDetailDialog.tsx";
 import BoardPriorityDeleteDialog from "./BoardPriorityDeleteDialog.tsx";
 import {PRIORITY_OPTIONS} from "../../helpers/utils/color.ts";
 import {getUserProfileUrl} from "../../helpers/utils/userHelper.ts";
@@ -228,8 +228,6 @@ export default function BoardPageContent({ board, id, refetch }: { board: Board;
                                 </>
                             )}
                         />
-
-                        {/* Priority filter dropdown */}
                         <FilterItemComponent
                             filterTitle={'filters.priorityFilter'}
                             filterSubtitle={''}

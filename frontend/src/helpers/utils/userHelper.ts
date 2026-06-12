@@ -1,7 +1,14 @@
 import {API_URL} from "../config";
 
 export const getUserProfileUrl = (profileImage?: string | null) => {
-  return profileImage ? `${API_URL}${profileImage}`: undefined;
+    let currentImage = profileImage;
+    window.addEventListener('update-image', (e)=>{
+        let image = e.detail?.data;
+        currentImage = image? image: profileImage;
+        console.log('current image 1', currentImage);
+    });
+    console.log('current image 2', currentImage);
+  return currentImage ? `${API_URL}${currentImage}`: undefined;
 }
 
 export const getLoggedUserInfo = function(){

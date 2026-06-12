@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import {Add, CleaningServices, Delete, DeleteForever, Edit, Flag, MoreVert, Warning} from "@mui/icons-material";
 import {PRIORITY_OPTIONS} from "../../../helpers/utils/color.ts";
-import TicketCard from "../../TicketCard.tsx";
+import TicketCard from "../../Ticket/TicketCard.tsx";
 import {t} from "i18next";
 import ClearListConfirmation from "./ConfirmationDialogs/ClearListConfirmation.tsx";
 import DeleteAllTicketsConfirmation from "./ConfirmationDialogs/DeleteAllTicketsConfirmation.tsx";
@@ -61,7 +61,7 @@ function BoarderColumnVisual(props) {
             backgroundColor: 'background.paper',
             display: 'flex',
             flexDirection: 'column',
-            maxHeight: 'calc(100vh - 250px)',
+            maxHeight: 'calc(100vh - 300px)',
         }}
     >
         <Box

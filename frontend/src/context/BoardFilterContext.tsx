@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { Board, Card, List } from '../helpers/types/BoardTypes';
 import type { SortDirection, SortField, PrioritySortMode } from '../helpers/utils/sortHelper';
 import { PRIORITY_SORT_ORDERS } from '../helpers/utils/sortHelper';
-import { useUserContext } from './UserContext';
+import { useUserContext, type UserContextUser } from './UserContext';
 
 export interface BoardUser {
   id: string;
@@ -13,39 +13,29 @@ export interface BoardUser {
 }
 
 export interface BoardFilterContextType {
-  // Board data
   board: Board | null;
-  currentUser: { id?: string; name?: string; email?: string };
-
-  // Search
+  currentUser: UserContextUser | null;
   searchQuery: string;
+  deferredQuery: string;
   setSearchQuery: (q: string) => void;
-
-  // Filters
   showOnlyMine: boolean;
   setShowOnlyMine: (v: boolean) => void;
   selectedUsers: string[];
   toggleUser: (uid: string) => void;
   selectedPriorities: string[];
   togglePriority: (p: string) => void;
-
-  // Sort
   sortBy: SortField;
   setSortBy: (f: SortField) => void;
   sortDirection: SortDirection;
   setSortDirection: (d: SortDirection | ((prev: SortDirection) => SortDirection)) => void;
   prioritySortMode: PrioritySortMode;
   setPrioritySortMode: (m: PrioritySortMode) => void;
-
-  // Derived
   allBoardUsers: BoardUser[];
   hasActiveFilters: boolean;
   activeFiltersCount: number;
   totalCardCount: number;
   filteredCardCount: number;
   filteredLists: List[];
-
-  // Actions
   clearFilters: () => void;
   filterCard: (card: Card) => boolean;
   sortCards: (cards: Card[]) => Card[];
@@ -69,21 +59,17 @@ interface BoardFilterProviderProps {
 export function BoardFilterProvider({ board, children }: BoardFilterProviderProps) {
   const { user: currentUser } = useUserContext();
 
-  // Search
   const [searchQuery, setSearchQuery] = useState('');
   const deferredQuery = useDeferredValue(searchQuery);
 
-  // Filters
   const [showOnlyMine, setShowOnlyMine] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
 
-  // Sort
   const [sortBy, setSortBy] = useState<SortField>('none');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [prioritySortMode, setPrioritySortMode] = useState<PrioritySortMode>('low-medium-high');
 
-  // Derived: unique users
   const allBoardUsers = useMemo<BoardUser[]>(() => {
     if (!board?.lists) return [];
     const userMap = new Map<string, BoardUser>();
@@ -188,11 +174,13 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
     return filteredLists.reduce((sum, list) => sum + list.cards.length, 0);
   }, [filteredLists]);
 
+
   const value = useMemo<BoardFilterContextType>(
     () => ({
       board,
       currentUser,
       searchQuery,
+      deferredQuery,
       setSearchQuery,
       showOnlyMine,
       setShowOnlyMine,
@@ -217,10 +205,10 @@ export function BoardFilterProvider({ board, children }: BoardFilterProviderProp
       sortCards,
     }),
     [
-      board, currentUser, searchQuery, showOnlyMine, selectedUsers, selectedPriorities,
+      board, currentUser, searchQuery, deferredQuery, showOnlyMine, selectedUsers, selectedPriorities,
       sortBy, sortDirection, prioritySortMode, allBoardUsers, hasActiveFilters,
       activeFiltersCount, totalCardCount, filteredCardCount, filteredLists,
-      clearFilters, filterCard, sortCards, toggleUser, togglePriority, deferredQuery,
+      clearFilters, filterCard, sortCards, toggleUser, togglePriority
     ],
   );
 

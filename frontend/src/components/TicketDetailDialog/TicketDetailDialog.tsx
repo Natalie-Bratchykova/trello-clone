@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import EditCardDialog from './EditCardDialog';
-import DeleteCartDialog from './Ticket/DeleteCartDialog';
-import DialogHeader from './TicketDetailDialog/DialogHeader';
-import DialogMainContent from './TicketDetailDialog/DialogMainContent';
-import DialogSidebar from './TicketDetailDialog/DialogSidebar';
-import { PRIORITY_CONFIG } from '../helpers/utils/color';
-import type { TicketDetailDialogProps } from '../helpers/types/cardType';
-import { useCardActions } from '../hooks/useCardActions';
+import EditCardDialog from './EditCardDialog.tsx';
+import DeleteCartDialog from '../Ticket/DeleteCartDialog.tsx';
+import DialogHeader from './DialogHeader.tsx';
+import DialogMainContent from './DialogMainContent.tsx';
+import DialogSidebar from './DialogSidebar.tsx';
+import { PRIORITY_CONFIG } from '../../helpers/utils/color.ts';
+import type { TicketDetailDialogProps } from '../../helpers/types/cardType.ts';
+import { useCardActions } from '../../hooks/useCardActions.ts';
 
 export default function TicketDetailDialog({ open, onClose, card, listTitle, boardId, onCardUpdated, onCardDeleted }: TicketDetailDialogProps) {
   const [editOpen, setEditOpen] = useState(false);

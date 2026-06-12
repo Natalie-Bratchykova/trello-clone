@@ -26,6 +26,7 @@ import BoardColumn from "../Logic/BoardColumn.tsx";
          totalCardCount, filteredCardCount,
          filteredLists,
          clearFilters,
+         deferredQuery
      } = useBoardFilter();
 
      const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -42,12 +43,11 @@ import BoardColumn from "../Logic/BoardColumn.tsx";
      };
      const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
      let {handleTicketsDnD, setCardDialogState, setSelectedCard, handleClearList, id, refetch} = props;
-
+     const isStale = localSearch !== deferredQuery;
 
     return(
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {/* Search + filter bar */}
-            <Box sx={{ px: 3, py: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.paper' }}>
+            <Box sx={{ px: 3, p: 1.5, display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.paper' }}>
                 <TextField
                     size="small"
                     placeholder={t('filters.searchPlaceholder')}
@@ -66,10 +66,8 @@ import BoardColumn from "../Logic/BoardColumn.tsx";
                     }}
                 />
 
-                {/* Users filter dropdown */}
                 {props.children}
 
-                {/* Sort dropdown */}
                 <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
                 <Button
                     variant={sortBy !== 'none' ? 'contained' : 'outlined'}
@@ -100,7 +98,6 @@ import BoardColumn from "../Logic/BoardColumn.tsx";
                                     setSortMenuAnchor(null);
                                 } else if (opt.value === 'priority') {
                                     setSortBy('priority');
-                                    // Don't close — let user pick mode below
                                 } else if (sortBy === opt.value) {
                                     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
                                     setSortMenuAnchor(null);
@@ -164,24 +161,26 @@ import BoardColumn from "../Logic/BoardColumn.tsx";
                         display: 'flex',
                         gap: 2,
                         pb: 2,
-                        minHeight: 'calc(100vh - 200px)',
+                        minHeight: 'calc(100vh - 500px)',
+                        opacity: isStale ? 0.5 : 1,
+                        transition: isStale ? 'opacity 0.2s 0.2s linear' : 'opacity 0s 0s linear'
                     }}
                 >
-                    {[...filteredLists]
-                        .sort((a, b) => a.position - b.position)
-                        .map((list) => (
-                            <BoardColumn
-                                onDrop={(item) => handleTicketsDnD(item, list)}
-                                list={list}
-                                key={list.id}
-                                setCardDialogState={setCardDialogState}
-                                onCardClick={(card, listTitle) => setSelectedCard({ card, listTitle })}
-                                onListUpdated={() => refetch()}
-                                externalSortActive={sortBy !== 'none'}
-                                isBacklog={list.position === 0}
-                                onClearList={handleClearList}
-                            />
-                        ))}
+                        {[...filteredLists]
+                            .sort((a, b) => a.position - b.position)
+                            .map((list) => (
+                                <BoardColumn
+                                    onDrop={(item) => handleTicketsDnD(item, list)}
+                                    list={list}
+                                    key={list.id}
+                                    setCardDialogState={setCardDialogState}
+                                    onCardClick={(card, listTitle) => setSelectedCard({ card, listTitle })}
+                                    onListUpdated={() => refetch()}
+                                    externalSortActive={sortBy !== 'none'}
+                                    isBacklog={list.position === 0}
+                                    onClearList={handleClearList}
+                                />
+                            ))}
 
                     <AddListCard boardId={id} onListCreated={refetch}/>
                 </Box>

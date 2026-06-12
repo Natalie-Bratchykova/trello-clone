@@ -12,9 +12,9 @@ import {
 } from '@mui/material';
 import {Close} from '@mui/icons-material';
 import {useTranslation} from 'react-i18next';
-import {formatDate} from "../helpers/utils/dateLocale.ts";
-import {useBoardActions} from "../hooks/useBoardActions.ts";
-import {useBoardValidation} from "../hooks/useBoardValidation.ts";
+import {formatDate} from "../../helpers/utils/dateLocale.ts";
+import {useBoardActions} from "../../hooks/useBoardActions.ts";
+import {useBoardValidation} from "../../hooks/useBoardValidation.ts";
 
 interface CreateBoardData {
     createBoard: {

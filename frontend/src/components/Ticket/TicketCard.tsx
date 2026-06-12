@@ -1,10 +1,10 @@
 import {Avatar, Box, Chip, Paper, Typography} from "@mui/material";
 import {useDrag} from "react-dnd";
-import {ItemTypes} from "../helpers/types/ItemTypes.ts";
-import {formatDate} from "../helpers/utils/dateLocale.ts";
+import {ItemTypes} from "../../helpers/types/ItemTypes.ts";
+import {formatDate} from "../../helpers/utils/dateLocale.ts";
 import i18n, {t} from "i18next";
-import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
-import {getDueDateColors, PRIORITY_CONFIG} from "../helpers/utils/color.ts";
+import {getUserProfileUrl} from "../../helpers/utils/userHelper.ts";
+import {getDueDateColors, PRIORITY_CONFIG} from "../../helpers/utils/color.ts";
 
 
 

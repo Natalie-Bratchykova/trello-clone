@@ -3,10 +3,45 @@ import {useMutation} from "@apollo/client/react";
 import { useTranslation } from 'react-i18next';
 import { UPLOAD_PROFILE_IMAGE } from "../helpers/gql/userGQL";
 
+const STORAGE_USER_KEY = 'user';
 
-export const useUserProfileImageUpload = (userId: string, refetch: () => void) => {
-    const [uploadProfileImage] = useMutation(UPLOAD_PROFILE_IMAGE);
+const rewriteStoredUserProfileImage = (userId: string, profileImage?: string | null) => {
+    if (!profileImage) return;
+
+    try {
+        const raw = localStorage.getItem(STORAGE_USER_KEY);
+        if (!raw) return;
+
+        const storedUser = JSON.parse(raw) as { id?: string; profileImage?: string };
+        if (!storedUser?.id || storedUser.id !== userId) return;
+
+        localStorage.setItem(
+            STORAGE_USER_KEY,
+            JSON.stringify({
+                ...storedUser,
+                profileImage,
+            }),
+        );
+    } catch {
+        // Ignore malformed localStorage payloads.
+    }
+};
+
+type UserRefetchResult = {
+    data?: {
+        user?: {
+            profileImage?: string | null;
+        };
+    };
+};
+
+export const useUserProfileImageUpload = (
+    userId: string,
+    refetch: () => Promise<UserRefetchResult>,
+) => {
+    const [uploadProfileImage] = useMutation<unknown, { userId: string; file: File }>(UPLOAD_PROFILE_IMAGE);
     const { t } = useTranslation();
+    const tr = (key: string) => t(key as never);
 
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -27,7 +62,7 @@ export const useUserProfileImageUpload = (userId: string, refetch: () => void) =
         if (!file.type.startsWith("image/")) {
             setSnackbar({
                 open: true,
-                message: t('profile.selectImage'),
+                message: tr('profile.selectImage'),
                 severity: "error",
             });
             return;
@@ -36,7 +71,7 @@ export const useUserProfileImageUpload = (userId: string, refetch: () => void) =
         if (file.size > 10 * 1024 * 1024) {
             setSnackbar({
                 open: true,
-                message: t('profile.fileSizeLimit'),
+                message: tr('profile.fileSizeLimit'),
                 severity: "error",
             });
             return;
@@ -45,19 +80,29 @@ export const useUserProfileImageUpload = (userId: string, refetch: () => void) =
         try {
             await uploadProfileImage({
                 variables: { userId, file },
-            });
+            } as never);
 
             setSnackbar({
                 open: true,
-                message: t('profile.photoUpdated'),
+                message: tr('profile.photoUpdated'),
                 severity: "success",
             });
 
-            refetch();
+            const data = await refetch();
+            const profileImage = data?.data?.user?.profileImage as string | undefined;
+
+            rewriteStoredUserProfileImage(userId, profileImage ?? null);
+            window.dispatchEvent(
+                new CustomEvent('update-image', {
+                    detail: {
+                        data: profileImage,
+                    },
+                }),
+            );
         } catch (err) {
             setSnackbar({
                 open: true,
-                message: t('profile.photoError'),
+                message: tr('profile.photoError'),
                 severity: "error",
             });
         }

@@ -196,11 +196,9 @@ export default function ProfilePage() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        {/* Ліва колонка - Основна інформація */}
-        <Grid item xs={12} md={4}>
+      <Grid container spacing={2} nowrap>
+        <Grid item size={{xs:12, md:4}}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>
-            {/* Аватар */}
             <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
               <Avatar
                 src={profileImageUrl}
@@ -214,7 +212,6 @@ export default function ProfilePage() {
                 {!profileImageUrl && (user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase())}
               </Avatar>
 
-              {/* Кнопка завантаження фото */}
               <IconButton
                 sx={{
                   position: 'absolute',
@@ -237,7 +234,6 @@ export default function ProfilePage() {
               </IconButton>
             </Box>
 
-            {/* Ім'я та email */}
             <Typography variant="h5" gutterBottom>
               {user?.name || t('common.noName')}
             </Typography>
@@ -247,7 +243,6 @@ export default function ProfilePage() {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* Статистика */}
             <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: 2 }}>
               <Box>
                 <Typography variant="h6">{boards.length}</Typography>
@@ -271,7 +266,7 @@ export default function ProfilePage() {
         </Grid>
 
         {/* Права колонка - Деталі профілю та проекти */}
-        <Grid item xs={12} md={8}>
+        <Grid item size={{xs:12, md:8}}>
           {/* Інформація профілю */}
           <Paper sx={{ p: 3, mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -300,7 +295,7 @@ export default function ProfilePage() {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid item size={{xs:12}}>
                 <TextField
                   fullWidth
                   label={t('auth.nameLabel')}
@@ -309,7 +304,7 @@ export default function ProfilePage() {
                   disabled={!isEditing}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item size={{xs:12}}>
                 <TextField
                   fullWidth
                   label={t('auth.emailLabel')}
@@ -319,7 +314,7 @@ export default function ProfilePage() {
                   type="email"
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item size={{xs:12}}>
                 <FormControl sx={{ minWidth: 120 }}>
                   <InputLabel>{t('profile.role')}</InputLabel>
                   <Select
@@ -336,7 +331,7 @@ export default function ProfilePage() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item size={{xs:12, sm:6}}>
                 <TextField
                   fullWidth
                   label={t('profile.registrationDate')}
@@ -345,7 +340,7 @@ export default function ProfilePage() {
                   variant="filled"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item size={{xs:12, sm:6}}>
                 <TextField
                   fullWidth
                   label={t('profile.lastUpdate')}

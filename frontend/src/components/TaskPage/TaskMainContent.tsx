@@ -1,7 +1,7 @@
 import { Box, Paper, Typography, Chip, Avatar } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
-import CommentsSection from '../CommentsSection';
+import CommentsSection from '../CommentSection/CommentsSection.tsx';
 import TextEditorUneditable from '../Ticket/TextEditorUneditable';
 import ReleaseIncludingTask from '../Ticket/Release/ReleaseIncludingTasks';
 import { definePriorityLabel } from '../../helpers/utils/color';

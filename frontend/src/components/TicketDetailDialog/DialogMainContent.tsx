@@ -4,7 +4,7 @@ import { AccountTree } from '@mui/icons-material';
 import TextEditorUneditable from '../Ticket/TextEditorUneditable';
 import SubTask from '../Ticket/SubTask';
 import ReleaseIncludingTask from '../Ticket/Release/ReleaseIncludingTasks';
-import CommentsSection from '../CommentsSection';
+import CommentsSection from '../CommentSection/CommentsSection.tsx';
 
 interface DialogMainContentProps {
   card: {

@@ -4,7 +4,7 @@ import { useQuery } from '@apollo/client/react';
 import { Container, Box, Typography, CircularProgress, Alert, Button, Paper } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import EditCardDialog from '../components/EditCardDialog';
+import EditCardDialog from '../components/TicketDetailDialog/EditCardDialog.tsx';
 import DeleteCartDialog from '../components/Ticket/DeleteCartDialog';
 import TaskHeader from '../components/TaskPage/TaskHeader';
 import TaskBreadcrumbs from '../components/TaskPage/TaskBreadcrumbs';

@@ -18,8 +18,8 @@ export default function ChecklistRenderer({html, onToggle,}: { html: string; onT
 
     const handleToggle = (idx: number) => {
         const updated = toggleChecklistItem(localHtml, idx);
-        setLocalHtml(updated);       // Optimistic update — instant UI
-        onToggle(idx, updated);      // Persist to server
+        setLocalHtml(updated);
+        onToggle(idx, updated);
     };
 
     return (

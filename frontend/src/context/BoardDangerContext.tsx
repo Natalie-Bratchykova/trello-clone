@@ -84,8 +84,6 @@ export function BoardDangerProvider({ board, boardId, children }: BoardDangerPro
     );
   }, [board, selectedBoardPriorities]);
 
-  // --- Mutations ---
-
   const [deleteAllLists, { loading: deletingAllLists }] = useDeleteAllListsExceptBacklogMutation();
 
   const handleDeleteAllLists = useCallback(async () => {

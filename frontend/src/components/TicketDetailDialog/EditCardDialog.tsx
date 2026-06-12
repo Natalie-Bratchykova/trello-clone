@@ -20,11 +20,11 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
-import {GET_USERS_EDIT_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from "../helpers/gql/cardGQL.ts";
-import {PRIORITY_OPTIONS} from "../helpers/utils/color.ts";
-import {QUILL_MODULES, QUILL_FORMATS} from "../helpers/utils/textEditorHelper.ts";
-import type {User, ParentCardOption, EditCardDialogProps, EditCardData, UpdateCardData, GetUsersData} from '../helpers/types/cardType.ts'
-import {getUserProfileUrl} from "../helpers/utils/userHelper.ts";
+import {GET_USERS_EDIT_QUERY, GET_BOARD_CARDS_QUERY, UPDATE_CARD_MUTATION} from "../../helpers/gql/cardGQL.ts";
+import {PRIORITY_OPTIONS} from "../../helpers/utils/color.ts";
+import {QUILL_MODULES, QUILL_FORMATS} from "../../helpers/utils/textEditorHelper.ts";
+import type {User, ParentCardOption, EditCardDialogProps, EditCardData, UpdateCardData, GetUsersData} from '../../helpers/types/cardType.ts'
+import {getUserProfileUrl} from "../../helpers/utils/userHelper.ts";
 
 
 export default function EditCardDialog({

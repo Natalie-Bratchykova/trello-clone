@@ -3,16 +3,16 @@ import { useState } from 'react';
 
 import 'react-quill-new/dist/quill.snow.css';
 
-import {isQuillContentEmpty,} from "../helpers/utils/textEditorHelper.ts";
-import type {Comment, CommentsSectionProps} from '../helpers/types/commentTypes.ts';
+import {isQuillContentEmpty,} from "../../helpers/utils/textEditorHelper.ts";
+import type {Comment, CommentsSectionProps} from '../../helpers/types/commentTypes.ts';
 import {
   useCreateCommentMutation,
   useDeleteCommentMutation,
   useGetCardCommentsLazyQuery,
   useUpdateCommentMutation
-} from "../generated/graphql.ts";
-import CommentsSectionVisual from "./CommentSection/Visual/CommentsSectionVisual.tsx";
-import { useUserContext } from '../context/UserContext';
+} from "../../generated/graphql.ts";
+import CommentsSectionVisual from "./Visual/CommentsSectionVisual.tsx";
+import { useUserContext } from '../../context/UserContext.tsx';
 
 
 export default function CommentsSection({ cardId, cardDescription }: CommentsSectionProps) {
